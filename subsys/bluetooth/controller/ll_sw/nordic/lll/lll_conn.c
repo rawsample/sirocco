@@ -265,7 +265,7 @@ void lll_conn_isr_rx(void *param)
 	pdu_data_rx = (void *)node_rx->pdu;
 
 #if defined(CONFIG_BT_SIROCCO)
-	lll_srcc_conn_rx(crc_ok, rssi_value, lll, pdu_data_rx);
+	lll_srcc_conn_rx(lll, crc_ok, rssi_value);
 #endif /* CONFIG_BT_SIROCCO */
 
 	if (crc_ok) {
@@ -562,6 +562,10 @@ void lll_conn_isr_tx(void *param)
 
 #endif /* CONFIG_BT_CTLR_DF_PHYEND_OFFSET_COMPENSATION_ENABLE */
 #endif /* CONFIG_BT_CTLR_DF_CONN_CTE_RX */
+
+#if defined(CONFIG_BT_SIROCCO)
+	lll_srcc_conn_tx(lll);
+#endif
 
 /* Use regular API for cases when:
  * - CTE RX is not enabled,

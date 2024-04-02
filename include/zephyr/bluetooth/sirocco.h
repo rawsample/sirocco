@@ -110,7 +110,7 @@ struct srcc_cb {
   //void (*conn_init)(void);
   //void (*conn_delete)(void);
   void (*conn_rx)(struct srcc_metric *);
-  //void (*conn_tx)(void);
+  void (*conn_tx)(struct srcc_metric *);
   //void (*scan_rx)(void);
   //void (*scan_tx)(void);
   struct srcc_cb *_next;
@@ -125,7 +125,7 @@ void srcc_cb_register(struct srcc_cb *cb);
 //void srcc_notify_conn_init(void);
 //void srcc_notify_conn_delete(void);
 void srcc_notify_conn_rx(struct metric_item *item);
-//void srcc_notify_conn_tx(void);
+void srcc_notify_conn_tx(struct metric_item *item);
 //void srcc_notify_scan_rx(void);
 
 

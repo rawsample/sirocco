@@ -11,11 +11,17 @@
 
 
 K_FIFO_DEFINE(rx_fifo);
-//K_FIFO_DEFINE(tx_fifo);
+K_FIFO_DEFINE(tx_fifo);
 //K_FIFO_DEFINE(scan_fifo);
 
-//struct metric_item rx_metric;
-
+struct k_poll_event events[2] = {
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+                                    K_POLL_MODE_NOTIFY_ONLY,
+                                    &rx_fifo, 0),
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+                                    K_POLL_MODE_NOTIFY_ONLY,
+                                    &tx_fifo, 0),
+};
 
 
 /* Main thread running detection algorithms
@@ -78,25 +84,42 @@ static void printk_pkt(struct srcc_ble_pkt *pkt)
 /* Main loop */
 static void sirocco_main_loop(void *, void *, void *)
 {
+    int ret;
     struct metric_item *item;
 	struct srcc_metric *metric;
+    bool is_rx;
 
 	while(1) {
 		//printk("[SIROCCO] main loop\n");
 
-        item = k_fifo_get(&rx_fifo, K_FOREVER);
+        ret = k_poll(events, 2, K_FOREVER);
+        if (ret < 0) {
+            printk("[SIROCCO] An error occured while polling fifo events: %d", ret);
+        }
+
+        if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+            item = k_fifo_get(&rx_fifo, K_FOREVER);
+            is_rx = true;
+
+        } else if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+            item = k_fifo_get(&tx_fifo, K_FOREVER);
+            is_rx = false;
+        }
+
+
         metric = &item->metric;
         //printk("metric @ %08x\n", metric);
 
-        /*
-        printk_conn(&metric->conn);
-        printk_pkt(&metric->pkt);
-        */
+        //printk_conn(&metric->conn);
+        //printk_pkt(&metric->pkt);
 
         if (metric->pkt.len != 0 ) {
-            printk_conn(&metric->conn);
-            printk_pkt(&metric->pkt);
-            printk("[SIROCCO] New Packet len = %d ", metric->pkt.len);
+            //printk_conn(&metric->conn);
+            //printk_pkt(&metric->pkt);
+            //printk("[SIROCCO] New packet len = %d ", metric->pkt.len);
+            printk("[SIROCCO] New ");
+            if (is_rx) { printk("RX "); } else { printk("TX "); }
+            printk("packet len = %d ", metric->pkt.len);
             printk("payload: ");
             for (int i=0; i<metric->pkt.len && i<255; i++) {
                 printk("%02x", metric->pkt.payload[i]);
@@ -105,6 +128,8 @@ static void sirocco_main_loop(void *, void *, void *)
         }
 
         k_free(item);
+        events[0].state = K_POLL_STATE_NOT_READY;
+        events[1].state = K_POLL_STATE_NOT_READY;
 
 		//k_sleep(K_SECONDS(1));
         //k_sleep(K_MSEC(1000));
@@ -143,31 +168,35 @@ void srcc_notify_conn_init(void)
 
 void srcc_notify_conn_rx(struct metric_item *item)
 {
-    //printk("[ISR RX] sirocco\n");
+    //printk("[RX ISR] sirocco\n");
 
     k_fifo_put(&rx_fifo, item);
 
     /* Callbacks
     for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
         if(cb->conn_rx) {
-            cb->conn_rx(metric);
+            cb->conn_rx(item);
+        }
+    }
+    */
+}
+
+void srcc_notify_conn_tx(struct metric_item *item)
+{
+    //printk("[TX ISR] sirocco\n");
+
+    k_fifo_put(&tx_fifo, item);
+
+    /* Callbacks
+    for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
+        if(cb->conn_tx) {
+            cb->conn_tx(item);
         }
     }
     */
 }
 
 /*
-void srcc_notify_conn_tx(void)
-{
-    // TODO: Gather the metrics
-
-    for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
-        if(cb->conn_tx) {
-            cb->conn_tx();
-        }
-    }
-}
-
 void srcc_notify_scan_rx(void)
 {
     return;

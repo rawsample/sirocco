@@ -85,6 +85,11 @@ if(CONFIG_BT_LL_SW_SPLIT)
       ll_sw/nordic/ull/ull_iso_vendor.c
       )
   endif()
+  if(CONFIG_BT_SIROCCO)
+    zephyr_library_sources(
+      ll_sw/nordic/lll/lll_sirocco.c
+    )
+  endif()
 endif()
 
 zephyr_library_sources(

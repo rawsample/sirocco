@@ -1,0 +1,2 @@
+
+zephyr_sources_ifdef(CONFIG_BT_SIROCCO sirocco.c)

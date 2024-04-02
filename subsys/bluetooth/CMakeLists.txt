@@ -19,3 +19,7 @@ endif()
 zephyr_include_directories(${ZEPHYR_BASE}/subsys/bluetooth)
 
 add_subdirectory(lib)
+
+if(CONFIG_BT_SIROCCO)
+  add_subdirectory(sirocco)
+endif()

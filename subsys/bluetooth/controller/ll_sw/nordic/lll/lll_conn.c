@@ -39,6 +39,8 @@
 #include "lll_tim_internal.h"
 #include "lll_prof_internal.h"
 
+#include "lll_sirocco.h"
+
 #include <zephyr/bluetooth/hci_types.h>
 
 #include "hal/debug.h"
@@ -211,6 +213,9 @@ void lll_conn_isr_rx(void *param)
 #if defined(CONFIG_BT_CTLR_DF_CONN_CTE_RX)
 	bool cte_ready;
 #endif /* CONFIG_BT_CTLR_DF_CONN_CTE_RX */
+#if defined(CONFIG_BT_SIROCCO)
+	uint32_t rssi_value;
+#endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {
 		lll_prof_latency_capture();
@@ -221,6 +226,9 @@ void lll_conn_isr_rx(void *param)
 	if (trx_done) {
 		crc_ok = radio_crc_is_valid();
 		rssi_ready = radio_rssi_is_ready();
+#if defined(CONFIG_BT_SIROCCO)
+		rssi_value = radio_rssi_get();
+#endif /* CONFIG_BT_SIROCCO */
 #if defined(CONFIG_BT_CTLR_DF_CONN_CTE_RX)
 		cte_ready = radio_df_cte_ready();
 
@@ -255,6 +263,10 @@ void lll_conn_isr_rx(void *param)
 	LL_ASSERT(node_rx);
 
 	pdu_data_rx = (void *)node_rx->pdu;
+
+#if defined(CONFIG_BT_SIROCCO)
+	lll_srcc_conn_rx(crc_ok, rssi_value, lll, pdu_data_rx);
+#endif /* CONFIG_BT_SIROCCO */
 
 	if (crc_ok) {
 		uint32_t err;

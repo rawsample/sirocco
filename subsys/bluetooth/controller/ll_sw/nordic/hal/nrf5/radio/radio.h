@@ -74,6 +74,7 @@ void radio_aa_set(const uint8_t *aa);
 void radio_pkt_configure(uint8_t bits_len, uint8_t max_len, uint8_t flags);
 void radio_pkt_rx_set(void *rx_packet);
 void radio_pkt_tx_set(void *tx_packet);
+void * radio_pkt_get(void);
 uint32_t radio_tx_ready_delay_get(uint8_t phy, uint8_t flags);
 uint32_t radio_tx_chain_delay_get(uint8_t phy, uint8_t flags);
 uint32_t radio_rx_ready_delay_get(uint8_t phy, uint8_t flags);

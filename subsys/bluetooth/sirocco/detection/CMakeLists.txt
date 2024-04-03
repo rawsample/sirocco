@@ -1,0 +1,7 @@
+zephyr_sources(common.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_BTLEJACK btlejack.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_BTLEJUICE btlejuice.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_GATTACKER gattacker.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_INJECTABLE injectable.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_JAMMING jamming.c)
+zephyr_sources_ifdef(CONFIG_BT_SRCC_KNOB knob.c)

@@ -81,13 +81,34 @@ static void printk_pkt(struct srcc_ble_pkt *pkt)
     printk("\n}\n");
 }
 
+static void run_detection_modules(struct srcc_metric *metric)
+{
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+    srcc_detect_btlejack(metric);
+#endif
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+    srcc_detect_btlejuice(metric);
+#endif
+#if defined(CONFIG_BT_SRCC_GATTACKER)
+    srcc_detect_gattacker(metric);
+#endif
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+    srcc_detect_injectable(metric);
+#endif
+#if defined(CONFIG_BT_SRCC_JAMMING)
+    srcc_detect_jamming(metric);
+#endif
+#if defined(CONFIG_BT_SRCC_KNOB)
+    srcc_detect_knob(metric);
+#endif
+}
+
 /* Main loop */
 static void sirocco_main_loop(void *, void *, void *)
 {
     int ret;
     struct metric_item *item;
 	struct srcc_metric *metric;
-    bool is_rx;
 
 	while(1) {
 		//printk("[SIROCCO] main loop\n");
@@ -99,26 +120,19 @@ static void sirocco_main_loop(void *, void *, void *)
 
         if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             item = k_fifo_get(&rx_fifo, K_FOREVER);
-            is_rx = true;
 
         } else if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             item = k_fifo_get(&tx_fifo, K_FOREVER);
-            is_rx = false;
         }
 
-
         metric = &item->metric;
-        //printk("metric @ %08x\n", metric);
-
-        //printk_conn(&metric->conn);
-        //printk_pkt(&metric->pkt);
 
         if (metric->pkt.len != 0 ) {
             //printk_conn(&metric->conn);
             //printk_pkt(&metric->pkt);
             //printk("[SIROCCO] New packet len = %d ", metric->pkt.len);
             printk("[SIROCCO] New ");
-            if (is_rx) { printk("RX "); } else { printk("TX "); }
+            if (metric->type & 0x1) { printk("TX "); } else { printk("RX "); }
             printk("packet len = %d ", metric->pkt.len);
             printk("payload: ");
             for (int i=0; i<metric->pkt.len && i<255; i++) {
@@ -126,6 +140,8 @@ static void sirocco_main_loop(void *, void *, void *)
             }
             printk("\n");
         }
+
+        run_detection_modules(metric);
 
         srcc_free_item(item);
         events[0].state = K_POLL_STATE_NOT_READY;

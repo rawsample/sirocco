@@ -75,6 +75,8 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     pkt->crc_is_valid = crc_ok;
     pkt->rssi = rssi_value;
 
+    item->metric.type = CONN_RX;
+
     /* Callbacks */
     srcc_notify_conn_rx(item);
 }
@@ -107,6 +109,8 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     copy_pdu_data_to_pkt(pkt, pdu_data_tx);
     pkt->crc_is_valid = 0;
     pkt->rssi = radio_rssi_get();
+
+    item->metric.type = CONN_TX;
 
     /* Callbacks */
     srcc_notify_conn_tx(item);

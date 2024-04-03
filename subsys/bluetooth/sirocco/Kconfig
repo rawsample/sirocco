@@ -1,0 +1,13 @@
+# Sirocco configuration options
+
+menuconfig BT_SIROCCO
+	bool "Sirocco Bluetooth IDS"
+	depends on BT_LL_SW_SPLIT
+	help
+	  This option enables the Sirocco Bluetooth intrusion detection system.
+
+if BT_SIROCCO
+
+rsource "detection/Kconfig"
+
+endif # BT_SIROCCO

@@ -65,10 +65,10 @@ struct __aligned(4) srcc_ble_conn {
 
 /* Device */
 enum srcc_gap_role {
-  ADVERTISER = 0,
-  PERIPHERAL = 1,
-  SCANNER = 2,
-  CENTRAL = 3
+  ADVERTISER = 0x0,
+  PERIPHERAL = 0x1,
+  SCANNER    = 0x2,
+  CENTRAL    = 0x3
 };
 
 struct srcc_local_dev {
@@ -87,12 +87,24 @@ struct srcc_remote_dev {
   //#endif
 };
 
+/* Event type
+ * - first bit indicates RX / TX
+ * - second bit indicates CONN / SCAN
+ */
+enum event_type {
+    CONN_RX  = 0x0,
+    CONN_TX  = 0x1,
+    SCAN_RX  = 0x2,
+    SCAN_TX  = 0x3,
+};
+
 /* Metrics */
 struct __aligned(4) srcc_metric {
+    enum event_type type;
     struct srcc_ble_pkt pkt;
     struct srcc_ble_conn conn;
-    //struct srcc_local_dev local_dev;
-    //struct srcc_remote_dev remote_dev;
+    struct srcc_local_dev local_dev;
+    struct srcc_remote_dev remote_dev;
 };
 
 struct __aligned(4) metric_item {
@@ -134,5 +146,38 @@ void srcc_clean_malloc_item(void);
 void *srcc_malloc_item(void);
 void srcc_free_item(void *ptr);
 
+
+/* Detection modules */
+
+enum alert_num {
+  NO_ALERT    = 0x0,
+  BTLEJACK    = 0x1,
+  BTLEJUICE   = 0x2,
+  GATTACKER   = 0x3,
+  INJECTABLE  = 0x4,
+  JAMMING     = 0x5,
+  KNOB        = 0x6,
+};
+
+void srcc_alert(enum alert_num nb, const char *fmt, ...);
+
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+void srcc_detect_btlejack(struct srcc_metric *metric);
+#endif
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+void srcc_detect_btlejuice(struct srcc_metric *metric);
+#endif
+#if defined(CONFIG_BT_SRCC_GATTACKER)
+void srcc_detect_gattacker(struct srcc_metric *metric);
+#endif
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+void srcc_detect_injectable(struct srcc_metric *metric);
+#endif
+#if defined(CONFIG_BT_SRCC_JAMMING)
+void srcc_detect_jamming(struct srcc_metric *metric);
+#endif
+#if defined(CONFIG_BT_SRCC_KNOB)
+void srcc_detect_knob(struct srcc_metric *metric);
+#endif
 
 #endif

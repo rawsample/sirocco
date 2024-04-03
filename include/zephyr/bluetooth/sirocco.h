@@ -129,4 +129,10 @@ void srcc_notify_conn_tx(struct metric_item *item);
 //void srcc_notify_scan_rx(void);
 
 
+int srcc_init_malloc_item(uint32_t nb);
+void srcc_clean_malloc_item(void);
+void *srcc_malloc_item(void);
+void srcc_free_item(void *ptr);
+
+
 #endif

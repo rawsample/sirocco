@@ -56,13 +56,11 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     timestamp = k_cycle_get_32();
     
-    /* XXX: Doing a malloc here for each RX packet may not be the best... */
-    item = k_malloc(sizeof(struct metric_item));
+    item = srcc_malloc_item();
     if (item == NULL) {
         printk("Failed to allocate memory from the heap for item :(\n");
         return;
     }
-    memset(item, 0, sizeof(struct metric_item));
 
     pdu_data_rx = radio_pkt_get();
 
@@ -91,12 +89,11 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
 
     timestamp = k_cycle_get_32();
 
-    item = k_malloc(sizeof(struct metric_item));
+    item = srcc_malloc_item();
     if (item == NULL) {
         printk("Failed to allocate memory from the heap for item :(\n");
         return;
     }
-    memset(item, 0, sizeof(struct metric_item));
 
     pdu_data_tx = radio_pkt_get();
 

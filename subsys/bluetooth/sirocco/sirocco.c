@@ -127,7 +127,7 @@ static void sirocco_main_loop(void *, void *, void *)
             printk("\n");
         }
 
-        k_free(item);
+        srcc_free_item(item);
         events[0].state = K_POLL_STATE_NOT_READY;
         events[1].state = K_POLL_STATE_NOT_READY;
 
@@ -209,5 +209,12 @@ void srcc_notify_scan_rx(void)
 
 void srcc_init(void)
 {
+    uint32_t ret;
+
+    ret = srcc_init_malloc_item(10);
+    if (ret < 0) {
+        return;
+    }
+
     return;    
 }

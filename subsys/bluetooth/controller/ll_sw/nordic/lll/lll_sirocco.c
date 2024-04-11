@@ -14,6 +14,7 @@
 
 #include "lll.h"
 #include "lll_df_types.h"
+#include "lll_scan.h"
 #include "lll_conn.h"
 
 #include "lll_sirocco.h"
@@ -21,6 +22,8 @@
 #include <zephyr/bluetooth/sirocco.h>
 
 
+
+static uint32_t scan_rx_count = 0;
 
 static void copy_pdu_data_to_pkt(struct srcc_ble_pkt *pkt, struct pdu_data *pdu_data)
 {
@@ -53,6 +56,9 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct metric_item *item;
     struct pdu_data *pdu_data_rx;
     uint32_t timestamp;
+
+    printk("SCAN RX COUNT = %d\n", scan_rx_count);
+    //printk("metric_item size = %d bytes", sizeof(struct metric_item));
 
     timestamp = k_cycle_get_32();
     
@@ -114,4 +120,49 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
 
     /* Callbacks */
     srcc_notify_conn_tx(item);
+}
+
+void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
+{
+    struct srcc_ble_adv *adv;
+    struct srcc_ble_conn *conn;
+    struct srcc_ble_pkt *pkt;
+    struct metric_item *item;
+    struct pdu_data *pdu_data_rx;
+    uint32_t timestamp;
+
+    //printk("SCAN RX\n");
+    scan_rx_count++;
+    //return;
+
+    timestamp = k_cycle_get_32();
+
+    item = srcc_malloc_item();
+    if (item == NULL) {
+        printk("Failed to allocate memory from the heap for item :(\n");
+        return;
+    }
+
+    pdu_data_rx = radio_pkt_get();
+
+    adv = &(item->metric.adv);
+    memcpy(&adv->adv_addr, lll->adv_addr, BDADDR_SIZE*sizeof(uint8_t));
+    adv->adv_addr_type = lll->adv_addr_type;
+    memcpy(&adv->init_addr, lll->init_addr, BDADDR_SIZE*sizeof(uint8_t));
+    adv->interval = lll->interval;
+    adv->ticks_window = lll->ticks_window;
+
+    conn = &(item->metric.conn);
+    copy_lll_to_conn(conn, lll->conn);
+
+    pkt = &(item->metric.pkt);
+    pkt->timestamp = timestamp;
+    copy_pdu_data_to_pkt(pkt, pdu_data_rx);
+    pkt->crc_is_valid = crc_ok;
+    pkt->rssi = rssi_value;
+
+    item->metric.type = SCAN_RX;
+
+    /* Callbacks */
+    srcc_notify_scan_rx(item);
 }

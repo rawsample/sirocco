@@ -9,6 +9,9 @@
 
 
 
+#define BDADDR_SIZE   6   /* from controller/ll_sw/pdu.h */
+#define SRCC_MALLOC_NB_ITEMS 20
+
 /* Packet */
 //enum adv_type {
 //  ADV_IND = 0,
@@ -63,6 +66,15 @@ struct __aligned(4) srcc_ble_conn {
   uint16_t rx_counter;
 };
 
+/* Advertise */
+struct __aligned(4) srcc_ble_adv {
+	uint8_t  adv_addr[BDADDR_SIZE];
+	uint8_t  adv_addr_type:1;
+	uint8_t  init_addr[BDADDR_SIZE];
+	uint16_t interval;
+	uint32_t ticks_window;
+};
+
 /* Device */
 enum srcc_gap_role {
   ADVERTISER = 0x0,
@@ -80,7 +92,7 @@ struct srcc_remote_dev {
   enum srcc_gap_role gap_role;
   bt_addr_le_t address;
   //#ifdef SCAN_ENABLED
-  //uint32_t advertisements_interval;
+  //uint16_t adv_interval;
   //#endif
   //#ifdef CONNECTION_ENABLED
   //uint32_t connection_interval;
@@ -103,6 +115,7 @@ struct __aligned(4) srcc_metric {
     enum event_type type;
     struct srcc_ble_pkt pkt;
     struct srcc_ble_conn conn;
+    struct srcc_ble_adv adv;
     struct srcc_local_dev local_dev;
     struct srcc_remote_dev remote_dev;
 };
@@ -123,7 +136,7 @@ struct srcc_cb {
   //void (*conn_delete)(void);
   void (*conn_rx)(struct srcc_metric *);
   void (*conn_tx)(struct srcc_metric *);
-  //void (*scan_rx)(void);
+  void (*scan_rx)(struct srcc_metric *);
   //void (*scan_tx)(void);
   struct srcc_cb *_next;
 };
@@ -138,7 +151,7 @@ void srcc_cb_register(struct srcc_cb *cb);
 //void srcc_notify_conn_delete(void);
 void srcc_notify_conn_rx(struct metric_item *item);
 void srcc_notify_conn_tx(struct metric_item *item);
-//void srcc_notify_scan_rx(void);
+void srcc_notify_scan_rx(struct metric_item *item);
 
 
 int srcc_init_malloc_item(uint32_t nb);

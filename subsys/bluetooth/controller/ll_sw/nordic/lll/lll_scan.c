@@ -671,6 +671,9 @@ static void isr_rx(void *param)
 	uint8_t rl_idx;
 	bool has_adva;
 	int err = 0U;
+#if defined(CONFIG_BT_SIROCCO)
+	uint32_t rssi_value;
+#endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {
 		lll_prof_latency_capture();
@@ -690,6 +693,9 @@ static void isr_rx(void *param)
 			irkmatch_id = FILTER_IDX_NONE;
 		}
 		rssi_ready = radio_rssi_is_ready();
+#if defined(CONFIG_BT_SIROCCO)
+		rssi_value = radio_rssi_get();
+#endif /* CONFIG_BT_SIROCCO */
 		phy_flags_rx = radio_phy_flags_rx_get();
 	} else {
 		crc_ok = devmatch_ok = irkmatch_ok = rssi_ready =
@@ -701,6 +707,10 @@ static void isr_rx(void *param)
 	lll_isr_status_reset();
 
 	lll = param;
+
+#if defined(CONFIG_BT_SIROCCO)
+	lll_srcc_scan_rx(lll, crc_ok, rssi_value);
+#endif /* CONFIG_BT_SIROCCO */
 
 	/* No Rx */
 	if (!trx_done || !crc_ok) {

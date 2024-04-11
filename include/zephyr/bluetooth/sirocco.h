@@ -9,8 +9,8 @@
 
 
 
-#define BDADDR_SIZE   6   /* from controller/ll_sw/pdu.h */
-#define SRCC_MALLOC_NB_ITEMS 20
+#define SRCC_MALLOC_COUNT_ITEMS 20
+
 
 /* Packet */
 //enum adv_type {
@@ -23,28 +23,29 @@
 //  ADV_SCAN_IND = 6
 //};
 
-struct adv_ind {
-  uint8_t adv_address[6];
-  uint8_t *data;
-};
+//struct adv_ind {
+//  uint8_t adv_address[6];
+//  uint8_t *data;
+//};
+//
+//struct srcc_ble_header {
+//  uint8_t ll_id:2;
+//  uint8_t nesn:1;
+//  uint8_t sn:1;
+//  uint8_t md:1;
+///*
+//#if defined(CONFIG_BT_CTLR_DF_CONN_CTE_TX) || defined(CONFIG_BT_CTLR_DF_CONN_CTE_RX)
+//	uint8_t cp:1;
+//	uint8_t rfu:2;
+//#else
+//*/
+//	uint8_t rfu:3;
+///*
+//#endif
+//*/
+//};
 
-struct srcc_ble_header {
-  uint8_t ll_id:2;
-  uint8_t nesn:1;
-  uint8_t sn:1;
-  uint8_t md:1;
 /*
-#if defined(CONFIG_BT_CTLR_DF_CONN_CTE_TX) || defined(CONFIG_BT_CTLR_DF_CONN_CTE_RX)
-	uint8_t cp:1;
-	uint8_t rfu:2;
-#else
-*/
-	uint8_t rfu:3;
-/*
-#endif
-*/
-};
-
 struct __aligned(4) srcc_ble_pkt {
   uint32_t timestamp;
   uint16_t crc_is_valid;
@@ -53,20 +54,21 @@ struct __aligned(4) srcc_ble_pkt {
   struct srcc_ble_header header;
   uint8_t payload[255];
 };
+*/
 
 /* Connection */
-struct __aligned(4) srcc_ble_conn {
-  uint8_t access_address[4];
-  uint8_t crc_init[3];
-  uint8_t channel_map[5]; // voir PDU_CHANNEL_MAP_SIZE
-  uint16_t hop_interval;
-  /* Count the number of packet lost between a ISR TX and ISR RX */
-  uint16_t packet_lost_counter;
-  uint16_t tx_counter;
-  uint16_t rx_counter;
-};
+//struct __aligned(4) srcc_ble_conn {
+//  uint8_t access_address[4];
+//  uint8_t crc_init[3];
+//  uint8_t channel_map[5]; // voir PDU_CHANNEL_MAP_SIZE
+//  uint16_t hop_interval;
+//  /* Count the number of packet lost between a ISR TX and ISR RX */
+//  uint16_t packet_lost_counter;
+//  uint16_t tx_counter;
+//  uint16_t rx_counter;
+//};
 
-/* Advertise */
+/* Advertise
 struct __aligned(4) srcc_ble_adv {
 	uint8_t  adv_addr[BDADDR_SIZE];
 	uint8_t  adv_addr_type:1;
@@ -74,8 +76,9 @@ struct __aligned(4) srcc_ble_adv {
 	uint16_t interval;
 	uint32_t ticks_window;
 };
+*/
 
-/* Device */
+/* Device 
 enum srcc_gap_role {
   ADVERTISER = 0x0,
   PERIPHERAL = 0x1,
@@ -98,6 +101,7 @@ struct srcc_remote_dev {
   //uint32_t connection_interval;
   //#endif
 };
+*/
 
 /* Event type
  * - first bit indicates RX / TX
@@ -110,7 +114,7 @@ enum event_type {
     SCAN_TX  = 0x3,
 };
 
-/* Metrics */
+/* Metrics
 struct __aligned(4) srcc_metric {
     enum event_type type;
     struct srcc_ble_pkt pkt;
@@ -124,7 +128,104 @@ struct __aligned(4) metric_item {
     void *fifo_reserved;
     struct srcc_metric metric;
 };
+*/
 
+
+/* SCAN metrics */
+
+/* Ugly hack to check if pdu.h has been included or we should defines struct */
+#ifndef BDADDR_SIZE
+/* Taken from controller/ll_sw/pdu.h */
+#define BDADDR_SIZE   6
+#define PDU_AC_LEG_DATA_SIZE_MAX   31
+
+struct pdu_adv_scan_req {
+    uint8_t scan_addr[BDADDR_SIZE];
+    uint8_t adv_addr[BDADDR_SIZE];
+} __packed;
+
+struct pdu_adv_scan_rsp {
+    uint8_t addr[BDADDR_SIZE];
+    uint8_t data[PDU_AC_LEG_DATA_SIZE_MAX];
+} __packed;
+
+struct pdu_adv_adv_ind {
+    uint8_t addr[BDADDR_SIZE];
+    uint8_t data[PDU_AC_LEG_DATA_SIZE_MAX];
+} __packed;
+
+struct pdu_adv_direct_ind {
+    uint8_t adv_addr[BDADDR_SIZE];
+    uint8_t tgt_addr[BDADDR_SIZE];
+} __packed;
+
+#endif  /* BDADDR_SIZE */
+
+struct __aligned(4) srcc_scan_metric {
+
+    /* Local Device (lll_scan) */
+    //uint8_t  adv_addr[BDADDR_SIZE];
+    //uint16_t interval;                // scanning interval used by the scanner
+    //uint32_t ticks_window;            // similar
+
+    /* Meta data */
+    uint32_t timestamp;
+    uint16_t rssi;
+
+    /* Packet */
+    uint16_t crc_is_valid;
+    /* Header */
+    uint8_t type:4;
+    //uint8_t rfu:1;
+    //uint8_t chan_sel:1;
+    //uint8_t tx_addr:1;
+    //uint8_t rx_addr:1;
+    uint8_t len;
+
+    /* Payload */
+    union {
+        struct pdu_adv_scan_req scan_req;
+        struct pdu_adv_scan_rsp scan_rsp;
+        struct pdu_adv_adv_ind adv_ind;
+        struct pdu_adv_direct_ind direct_ind;
+    } __packed;
+} __packed;
+
+struct __aligned(4) srcc_scan_item {
+  void *fifo_reserved;
+  struct srcc_scan_metric metric;
+} __packed;
+
+
+/* CONN metrics */
+
+struct __aligned(4) srcc_conn_metric {
+
+    /* Local device (lll_conn) */
+    uint8_t access_addr[4];
+
+    /* Meta data */
+    uint32_t timestamp;
+    uint16_t rssi;
+
+    /* Packet */
+    uint16_t crc_is_valid;
+    /* Header */
+    //uint8_t ll_id:2;
+    //uint8_t nesn:1;
+    //uint8_t sn:1;
+    //uint8_t md:1;
+    //uint8_t rfu:3;
+    uint8_t len;
+
+    /* Payload */
+    //uint8_t payload[]
+} __packed;
+
+struct __aligned(4) srcc_conn_item {
+  void *fifo_reserved;
+  struct srcc_conn_metric metric;
+} __packed;
 
 
 /* API exposed to applications */
@@ -149,15 +250,19 @@ void srcc_cb_register(struct srcc_cb *cb);
 /* Reserved usage, should not be called by applications */
 //void srcc_notify_conn_init(void);
 //void srcc_notify_conn_delete(void);
-void srcc_notify_conn_rx(struct metric_item *item);
-void srcc_notify_conn_tx(struct metric_item *item);
-void srcc_notify_scan_rx(struct metric_item *item);
+void srcc_notify_conn_rx(struct srcc_conn_item *item);
+void srcc_notify_conn_tx(struct srcc_conn_item *item);
+void srcc_notify_scan_rx(struct srcc_scan_item *item);
 
 
-int srcc_init_malloc_item(uint32_t nb);
-void srcc_clean_malloc_item(void);
-void *srcc_malloc_item(void);
-void srcc_free_item(void *ptr);
+int srcc_init_conn_alloc(uint32_t count);
+int srcc_init_scan_alloc(uint32_t count);
+void srcc_clean_conn_alloc(void);
+void srcc_clean_scan_alloc(void);
+void *srcc_malloc_conn_item(void);
+void *srcc_malloc_scan_item(void);
+void srcc_free_conn_item(void *ptr);
+void srcc_free_scan_item(void *ptr);
 
 
 /* Detection modules */

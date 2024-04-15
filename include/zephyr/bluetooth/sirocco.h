@@ -9,7 +9,7 @@
 
 
 
-#define SRCC_MALLOC_COUNT_ITEMS 20
+#define SRCC_MALLOC_COUNT_ITEMS 10
 
 
 /* Packet */
@@ -235,9 +235,9 @@ struct __aligned(4) srcc_conn_item {
 struct srcc_cb {
   //void (*conn_init)(void);
   //void (*conn_delete)(void);
-  void (*conn_rx)(struct srcc_metric *);
-  void (*conn_tx)(struct srcc_metric *);
-  void (*scan_rx)(struct srcc_metric *);
+  void (*conn_rx)(struct srcc_conn_metric *);
+  void (*conn_tx)(struct srcc_conn_metric *);
+  void (*scan_rx)(struct srcc_scan_metric *);
   //void (*scan_tx)(void);
   struct srcc_cb *_next;
 };

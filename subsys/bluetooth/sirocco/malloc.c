@@ -9,8 +9,9 @@
  */
 
 struct memory_block {
-    struct memory_block *next;
+    //struct memory_block *next;
     void *data;
+    void *next;
 };
 
 struct srcc_alloc {
@@ -38,20 +39,23 @@ static void printk_free_list(struct srcc_alloc *allocator)
     printk("Free list: ");
     while (mb != NULL) {
         count++;
-        printk("%p --> ", mb);
+        printk("%p (%p) --> ", mb, mb->data);
         mb = mb->next;
     }
-    printk("NULL\n");
+    printk("NULL (count = %d)\n", count);
 }
 
-static int init_malloc_item(uint32_t item_count, size_t item_size)
+static int init_malloc_item(struct srcc_alloc *allocator,
+                            uint32_t item_count, size_t item_size)
 {
     size_t pool_size;
+    size_t block_size;
     struct memory_block *mb;
-    struct srcc_alloc *allocator;
+
+    block_size = item_size + sizeof(struct memory_block);
+    pool_size = item_count * block_size;
 
     /* Create the memory pool */
-    pool_size = item_count * item_size;
     allocator->memory_pool = k_malloc(pool_size);
     if (allocator->memory_pool == NULL) {
         printk("Failed to allocate memory from the heap for the item buffer :(\n");
@@ -60,29 +64,17 @@ static int init_malloc_item(uint32_t item_count, size_t item_size)
     
     memset(allocator->memory_pool, 0, pool_size);
 
-    /* Create the item_count memory blocks */
+    /* Create all memory blocks */
     allocator->free_list = NULL;
     for (int i=0; i<item_count; i++) {
 
-        mb = k_malloc(sizeof(struct memory_block));
-        if (mb == NULL) {
-            printk("Failed to allocate memory for memory_block :(\n");
-            /* Free all allocated blocks */
-            while (allocator->free_list != NULL) {
-                mb = allocator->free_list;
-                allocator->free_list = allocator->free_list->next;
-                k_free(mb);
-            }
-            return -ENOMEM;
-        }
-
-        mb->data = allocator->memory_pool + i*item_size;    // to verify
-        //printk("New memory block @ %p\n", mb);
+        mb = (struct memory_block *)((char *)allocator->memory_pool + i * block_size + item_size);
+        mb->data = (void *)((char *)allocator->memory_pool + i * block_size);    // to verify
+        //printk("New memory block @ %p with data @ %p\n", mb, mb->data);
         mb->next = allocator->free_list;
         allocator->free_list = mb;
     }
 
-    printk_free_list(allocator);
     allocator->capacity = item_count;
     allocator->item_size = item_size;
     allocator->count = 0;
@@ -98,13 +90,7 @@ static void clean_malloc_item(struct srcc_alloc *allocator)
 
     } else {
     */
-    struct memory_block *mb;
 
-    while (allocator->free_list != NULL) {
-        mb = allocator->free_list;
-        allocator->free_list = allocator->free_list->next;
-        k_free(mb);
-    }
     k_free(allocator->memory_pool);
 }
 
@@ -133,7 +119,8 @@ static void free_item(struct srcc_alloc *allocator, void *ptr)
 
     //printk("Free: capacity = %d alloc_count = %d\n", allocator.capacity, allocator.count);
 
-    struct memory_block *mb = (struct memory_block *)((char *)ptr - offsetof(struct memory_block, data));
+    struct memory_block *mb = (struct memory_block *)((char *)ptr + allocator->item_size);
+    //printk("ptr @ 0x%08x ?= data %p mb @ %p\n", (unsigned int) ptr, mb->data, mb);
 
     //memset(mb->data, 0, sizeof(allocator->item_size));
 
@@ -148,7 +135,7 @@ static void free_item(struct srcc_alloc *allocator, void *ptr)
 
 int srcc_init_scan_alloc(uint32_t count)
 {
-    return init_malloc_item(count, sizeof(struct srcc_scan_item));
+    return init_malloc_item(&scan_allocator, count, sizeof(struct srcc_scan_item));
 }
 
 void srcc_clean_scan_alloc(void)
@@ -170,7 +157,7 @@ void srcc_free_scan_item(void *ptr)
 
 int srcc_init_conn_alloc(uint32_t count)
 {
-    return init_malloc_item(count, sizeof(struct srcc_conn_item));
+    return init_malloc_item(&conn_allocator, count, sizeof(struct srcc_conn_item));
 }
 
 void srcc_clean_conn_alloc(void)

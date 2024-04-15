@@ -144,10 +144,14 @@ static void sirocco_main_loop(void *, void *, void *)
     struct srcc_scan_item *scan_item;
     struct srcc_conn_item *conn_item;
 
+    printk("[SIROCCO] sizeof(scan_metric) = %d bytes\n"
+           "[SIROCCO] sizeof(conn_metric) = %d bytes\n",
+           sizeof(struct srcc_scan_metric), sizeof(struct srcc_conn_metric));
+
 	while(1) {
 		//printk("[SIROCCO] main loop\n");
 
-        ret = k_poll(events, 2, K_FOREVER);
+        ret = k_poll(events, 3, K_FOREVER);
         if (ret < 0) {
             printk("[SIROCCO] An error occured while polling fifo events: %d", ret);
         }

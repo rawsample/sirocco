@@ -43,6 +43,8 @@
 #include "lll_prof_internal.h"
 #include "lll_scan_internal.h"
 
+#include "lll_sirocco.h"
+
 #include "hal/debug.h"
 
 /* Maximum primary Advertising Radio Channels to scan */
@@ -709,7 +711,7 @@ static void isr_rx(void *param)
 	lll = param;
 
 #if defined(CONFIG_BT_SIROCCO)
-	lll_srcc_scan_rx(lll, crc_ok, rssi_value);
+	lll_srcc_scan_rx(crc_ok, rssi_value);
 #endif /* CONFIG_BT_SIROCCO */
 
 	/* No Rx */

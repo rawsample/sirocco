@@ -487,9 +487,9 @@ void radio_pkt_tx_set(void *tx_packet)
 	NRF_RADIO->PACKETPTR = (uint32_t)tx_packet;
 }
 
-void * radio_pkt_get(void)
+void *radio_pkt_get(void)
 {
-	return NRF_RADIO->PACKETPTR;
+	return (void *)NRF_RADIO->PACKETPTR;
 }
 
 uint32_t radio_tx_ready_delay_get(uint8_t phy, uint8_t flags)

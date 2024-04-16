@@ -164,9 +164,9 @@ struct pdu_adv_direct_ind {
 struct __aligned(4) srcc_scan_metric {
 
     /* Local Device (lll_scan) */
-    //uint8_t  adv_addr[BDADDR_SIZE];
-    //uint16_t interval;                // scanning interval used by the scanner
-    //uint32_t ticks_window;            // similar
+    uint8_t  adv_addr[BDADDR_SIZE];
+    uint16_t interval;                // scanning interval used by the scanner
+    uint32_t ticks_window;            // similar
 
     /* Meta data */
     uint32_t timestamp;

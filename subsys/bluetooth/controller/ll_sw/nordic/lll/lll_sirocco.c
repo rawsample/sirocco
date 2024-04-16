@@ -40,7 +40,6 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     //printk("SCAN RX COUNT = %d\n", scan_rx_count);
     //printk("metric_item size = %d bytes", sizeof(struct metric_item));
 
-    return;
     timestamp = k_cycle_get_32();
 
     pdu_data = radio_pkt_get();
@@ -67,7 +66,6 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     struct pdu_data *pdu_data;
     uint32_t timestamp;
 
-    return;
     timestamp = k_cycle_get_32();
 
     pdu_data = radio_pkt_get();
@@ -88,7 +86,7 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     srcc_notify_conn_tx(item);
 }
 
-void lll_srcc_scan_rx(uint8_t crc_ok, uint32_t rssi_value)
+void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
 {
     struct srcc_scan_item *item;
     struct pdu_adv *pdu_adv;
@@ -121,11 +119,14 @@ void lll_srcc_scan_rx(uint8_t crc_ok, uint32_t rssi_value)
         return;
     }
 
+    memcpy(&item->metric.adv_addr, lll->adv_addr, BDADDR_SIZE * sizeof(uint8_t));
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = crc_ok;
     item->metric.type = pdu_adv->type;
     item->metric.len = pdu_adv->len;
+    item->metric.interval = lll->interval;
+    item->metric.ticks_window = lll->ticks_window;
 
     switch (pdu_adv->type) {
         case 0b0000:    /* ADV_IND */

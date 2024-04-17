@@ -117,7 +117,7 @@ static void free_item(struct srcc_alloc *allocator, void *ptr)
         return;
     }
 
-    //printk("Free: capacity = %d alloc_count = %d\n", allocator.capacity, allocator.count);
+    //printk("Free: capacity = %d alloc_count = %d\n", allocator->capacity, allocator->count);
 
     struct memory_block *mb = (struct memory_block *)((char *)ptr + allocator->item_size);
     //printk("ptr @ 0x%08x ?= data %p mb @ %p\n", (unsigned int) ptr, mb->data, mb);

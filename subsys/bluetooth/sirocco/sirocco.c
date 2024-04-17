@@ -30,7 +30,8 @@ struct k_poll_event events[3] = {
 /* Main thread running detection algorithms
  ****************************************************************************/
 
-#define SRCC_THREAD_STACK_SIZE 1024
+//#define SRCC_THREAD_STACK_SIZE 1024
+#define SRCC_THREAD_STACK_SIZE 4096
 #define SRCC_THREAD_PRIORITY 5
 
 /*
@@ -85,38 +86,6 @@ static void printk_pkt(struct srcc_ble_pkt *pkt)
     printk("\n}\n");
 }
 */
-void printk_conn_metric(struct srcc_conn_metric *conn_metric)
-{
-    printk("[SIROCCO] CONN: %d %02x:%02x:%02x:%02x 0x%x %hu %hu\n",
-           conn_metric->timestamp,
-           conn_metric->access_addr[0],
-           conn_metric->access_addr[1],
-           conn_metric->access_addr[2],
-           conn_metric->access_addr[3],
-           conn_metric->len,
-           conn_metric->crc_is_valid,
-           conn_metric->rssi
-    );
-}
-
-void printk_scan_metric(struct srcc_scan_metric *scan_metric)
-{
-    printk("[SIROCCO] SCAN RX: %d %02x:%02x:%02x:%02x:%02x:%02x 0x%x 0x%x %hu %hu %hu %d\n",
-           scan_metric->timestamp,
-           scan_metric->adv_addr[5],
-           scan_metric->adv_addr[4],
-           scan_metric->adv_addr[3],
-           scan_metric->adv_addr[2],
-           scan_metric->adv_addr[1],
-           scan_metric->adv_addr[0],
-           scan_metric->type,
-           scan_metric->len,
-           scan_metric->crc_is_valid,
-           scan_metric->rssi,
-           scan_metric->interval,
-           scan_metric->ticks_window
-    );
-}
 
 /*
 static void run_detection_modules(struct srcc_metric *metric)
@@ -141,18 +110,6 @@ static void run_detection_modules(struct srcc_metric *metric)
 #endif
 }
 */
-
-static void run_conn_detection(struct srcc_conn_metric *conn_metric)
-{
-    // For now, only print something
-    printk_conn_metric(conn_metric);
-}
-
-static void run_scan_detection(struct srcc_scan_metric *scan_metric)
-{
-    // For now, only print something
-    printk_scan_metric(scan_metric);
-}
 
 
 /* Main loop */

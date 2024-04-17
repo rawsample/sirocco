@@ -110,6 +110,7 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
             break;
 
         default:
+            /* */
             return;
     }
 
@@ -119,7 +120,9 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
         return;
     }
 
+#if defined(CONFIG_BT_CENTRAL)
     memcpy(&item->metric.adv_addr, lll->adv_addr, BDADDR_SIZE * sizeof(uint8_t));
+#endif
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = crc_ok;

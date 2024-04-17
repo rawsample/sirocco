@@ -265,6 +265,12 @@ void srcc_free_conn_item(void *ptr);
 void srcc_free_scan_item(void *ptr);
 
 
+void printk_conn_metric(struct srcc_conn_metric *conn_metric);
+void printk_scan_metric(struct srcc_scan_metric *scan_metric);
+void run_conn_detection(struct srcc_conn_metric *conn_metric);
+void run_scan_detection(struct srcc_scan_metric *scan_metric);
+
+
 /* Detection modules */
 
 enum alert_num {

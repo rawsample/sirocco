@@ -952,6 +952,7 @@ static int prepare_cb(struct lll_prepare_param *p)
 	 */
 	if (unlikely(lll->conn &&
 		(lll->conn->periph.initiated || lll->conn->periph.cancelled))) {
+		//printk("set adv lll_isr_early_abort %p\n", lll_isr_early_abort);
 		radio_isr_set(lll_isr_early_abort, lll);
 		radio_disable();
 
@@ -1043,6 +1044,7 @@ static int prepare_cb(struct lll_prepare_param *p)
 	if (overhead) {
 		LL_ASSERT_OVERHEAD(overhead);
 
+		//printk("set adv isr_abort %p\n", isr_abort);
 		radio_isr_set(isr_abort, lll);
 		radio_disable();
 
@@ -1134,6 +1136,7 @@ static void abort_cb(struct lll_prepare_param *prepare_param, void *param)
 		 * After event has been cleanly aborted, clean up resources
 		 * and dispatch event done.
 		 */
+		//printk("set adv isr_abort %p\n", isr_abort);
 		radio_isr_set(isr_abort, param);
 		radio_disable();
 		return;
@@ -1186,6 +1189,7 @@ static void isr_tx(void *param)
 		lll_prof_cputime_capture();
 	}
 
+	//printk("set adv isr_rx %p\n", isr_rx);
 	radio_isr_set(isr_rx, param);
 
 #if defined(CONFIG_BT_CTLR_PRIVACY)
@@ -1291,6 +1295,7 @@ static void isr_rx(void *param)
 	}
 
 isr_rx_do_close:
+	//printk("set adv isr_done %p\n", isr_done);
 	radio_isr_set(isr_done, param);
 	radio_disable();
 }
@@ -1490,10 +1495,12 @@ static struct pdu_adv *chan_prepare(struct lll_adv *lll)
 		ARG_UNUSED(upd);
 #endif /* !CONFIG_BT_CTLR_PRIVACY */
 
+		//printk("set adv isr_tx %p\n", isr_tx);
 		radio_isr_set(isr_tx, lll);
 		radio_tmr_tifs_set(EVENT_IFS_US);
 		radio_switch_complete_and_rx(0);
 	} else {
+		//printk("set adv isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, lll);
 		radio_switch_complete_and_disable();
 	}
@@ -1543,6 +1550,7 @@ static inline int isr_rx_pdu(struct lll_adv *lll,
 	    (tgt_addr == NULL) &&
 	    lll_adv_scan_req_check(lll, pdu_rx, tx_addr, addr, devmatch_ok,
 				    &rl_idx)) {
+		//printk("set adv isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, lll);
 		radio_switch_complete_and_disable();
 		radio_pkt_tx_set(lll_adv_scan_rsp_curr_get(lll));
@@ -1615,6 +1623,7 @@ static inline int isr_rx_pdu(struct lll_adv *lll,
 			return -ENOBUFS;
 		}
 
+		//printk("set adv isr_abort_all %p\n", isr_abort_all);
 		radio_isr_set(isr_abort_all, lll);
 		radio_disable();
 

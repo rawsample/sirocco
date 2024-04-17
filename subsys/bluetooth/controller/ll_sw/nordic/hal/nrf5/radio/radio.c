@@ -141,6 +141,7 @@ static void           *isr_cb_param;
 void isr_radio(void)
 {
 	if (radio_has_disabled()) {
+		//printk("Call %p\n", isr_cb);
 		isr_cb(isr_cb_param);
 	}
 }
@@ -151,6 +152,8 @@ void radio_isr_set(radio_isr_cb_t cb, void *param)
 
 	isr_cb_param = param;
 	isr_cb = cb;
+
+	//printk("Set %p\n", cb);
 
 	nrf_radio_int_enable(NRF_RADIO,
 			     0 |

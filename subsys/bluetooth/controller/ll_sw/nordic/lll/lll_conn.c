@@ -162,6 +162,7 @@ void lll_conn_abort_cb(struct lll_prepare_param *prepare_param, void *param)
 		 * After event has been cleanly aborted, clean up resources
 		 * and dispatch event done.
 		 */
+		//printk("set conn isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, param);
 		radio_disable();
 		return;
@@ -245,6 +246,7 @@ void lll_conn_isr_rx(void *param)
 
 	/* No Rx */
 	if (!trx_done) {
+		//printk("set conn isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, param);
 		radio_disable();
 
@@ -277,6 +279,7 @@ void lll_conn_isr_rx(void *param)
 			/* Disable radio trx switch on MIC failure for both
 			 * central and peripheral, and close the radio event.
 			 */
+			//printk("set conn isr_done %p\n", isr_done);
 			radio_isr_set(isr_done, param);
 			radio_disable();
 
@@ -340,6 +343,7 @@ void lll_conn_isr_rx(void *param)
 			      (pdu_data_tx->len == 0));
 
 	if (is_done) {
+		//printk("set conn isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, param);
 
 		if (0) {
@@ -373,6 +377,7 @@ void lll_conn_isr_rx(void *param)
 		radio_switch_complete_and_rx(0);
 #endif /* !CONFIG_BT_CTLR_PHY */
 
+		//printk("set conn lll_conn_isr_tx %p\n", lll_conn_isr_tx);
 		radio_isr_set(lll_conn_isr_tx, param);
 
 		/* capture end of Tx-ed PDU, used to calculate HCTO. */
@@ -643,6 +648,7 @@ void lll_conn_isr_tx(void *param)
 #endif /* !CONFIG_BT_CTLR_PHY */
 #endif /* HAL_RADIO_GPIO_HAVE_LNA_PIN */
 
+	//printk("set conn lll_conn_isr_rx %p\n", lll_conn_isr_rx);
 	radio_isr_set(lll_conn_isr_rx, param);
 
 #if defined(CONFIG_BT_CTLR_LOW_LAT_ULL)

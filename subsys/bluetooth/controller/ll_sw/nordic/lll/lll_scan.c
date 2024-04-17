@@ -360,6 +360,7 @@ static int common_prepare_cb(struct lll_prepare_param *p, bool is_resume)
 		     (lll->conn &&
 		      (lll->conn->central.initiated ||
 		       lll->conn->central.cancelled)))) {
+		//printk("set scan lll_isr_early_abort %p\n", lll_isr_early_abort);
 		radio_isr_set(lll_isr_early_abort, lll);
 		radio_disable();
 
@@ -404,6 +405,8 @@ static int common_prepare_cb(struct lll_prepare_param *p, bool is_resume)
 
 	lll_chan_set(37 + lll->chan);
 
+	//printk("set scan isr_rx %p\n", isr_rx);
+	//printk("set scan isr_rx\n");
 	radio_isr_set(isr_rx, lll);
 
 	/* setup tIFS switching */
@@ -486,6 +489,7 @@ static int common_prepare_cb(struct lll_prepare_param *p, bool is_resume)
 	if (overhead) {
 		LL_ASSERT_OVERHEAD(overhead);
 
+		//printk("set scan isr_abort %p\n", isr_abort);
 		radio_isr_set(isr_abort, lll);
 		radio_disable();
 
@@ -582,6 +586,7 @@ static int is_abort_cb(void *next, void *curr, lll_prepare_cb_t *resume_cb)
 		/* Duration expired, do not continue, close and generate
 		 * done event.
 		 */
+		//printk("set scan isr_done_cleanup %p\n", isr_done_cleanup);
 		radio_isr_set(isr_done_cleanup, lll);
 	} else if (lll->state || lll->is_aux_sched) {
 		/* Do not abort scan response reception or LLL scheduled
@@ -591,6 +596,7 @@ static int is_abort_cb(void *next, void *curr, lll_prepare_cb_t *resume_cb)
 #endif /* CONFIG_BT_CTLR_ADV_EXT */
 	} else {
 		/* Switch scan window to next radio channel */
+		//printk("set scan isr_window %p\n", isr_window);
 		radio_isr_set(isr_window, lll);
 	}
 
@@ -621,6 +627,7 @@ static void abort_cb(struct lll_prepare_param *prepare_param, void *param)
 			}
 #endif /* CONFIG_BT_CENTRAL */
 		} else {
+			//printk("set scan isr_done_cleanup %p\n", isr_done_cleanup);
 			radio_isr_set(isr_done_cleanup, param);
 			radio_disable();
 		}
@@ -776,8 +783,10 @@ static void isr_rx(void *param)
 
 isr_rx_do_close:
 	if (IS_ENABLED(CONFIG_BT_CTLR_LOW_LAT) && (err == -ECANCELED)) {
+		//printk("set scan isr_done_cleanup %p\n", isr_done_cleanup);
 		radio_isr_set(isr_done_cleanup, lll);
 	} else {
+		//printk("set scan isr_done %p\n", isr_done);
 		radio_isr_set(isr_done, lll);
 	}
 
@@ -834,6 +843,7 @@ static void isr_tx(void *param)
 				 HAL_RADIO_GPIO_LNA_OFFSET);
 #endif /* HAL_RADIO_GPIO_HAVE_LNA_PIN */
 
+	//printk("set scan radio_isr_set %p\n", isr_rx);
 	radio_isr_set(isr_rx, param);
 }
 
@@ -888,6 +898,7 @@ static void isr_common_done(void *param)
 
 	radio_rssi_measure();
 
+	//printk("set scan isr_rx %p\n", isr_rx);
 	radio_isr_set(isr_rx, param);
 }
 
@@ -1203,6 +1214,7 @@ static inline int isr_rx_pdu(struct lll_scan *lll, struct pdu_adv *pdu_adv_rx,
 			lll_prof_cputime_capture();
 		}
 
+		//printk("set scan isr_done_cleanup %p\n", isr_done_cleanup);
 		radio_isr_set(isr_done_cleanup, lll);
 
 #if defined(HAL_RADIO_GPIO_HAVE_PA_PIN)
@@ -1364,6 +1376,7 @@ static inline int isr_rx_pdu(struct lll_scan *lll, struct pdu_adv *pdu_adv_rx,
 		}
 #endif /* CONFIG_BT_CTLR_ADV_EXT */
 
+		//printk("set scan isr_tx %p\n", isr_tx);
 		radio_isr_set(isr_tx, lll);
 
 		return 0;

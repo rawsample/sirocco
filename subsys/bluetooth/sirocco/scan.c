@@ -9,15 +9,32 @@
 #include <zephyr/bluetooth/sirocco.h>
 
 
-SYS_HASHMAP_DEFINE_STATIC(scan_hmap);
+// For a 64 MHz processor
+#define TIMEOUT 1000000
 
+
+struct scan_data {
+    uint64_t counter;
+    //uint32_t timestamps[32];
+    struct srcc_scan_metric previous_metric;
+};
+
+
+//SYS_HASHMAP_DEFINE_STATIC(scan_hmap);
+#define SCAN_MAX_ENTRY 32   /* Note: If > 255, update struct timeout_data below */
+SYS_HASHMAP_SC_DEFINE_STATIC_ADVANCED(scan_hmap,
+                                      sys_hash32,
+                                      SYS_HASHMAP_DEFAULT_ALLOCATOR,
+                                      SYS_HASHMAP_CONFIG(SCAN_MAX_ENTRY, SYS_HASHMAP_DEFAULT_LOAD_FACTOR)
+);
 
 
 /* Printk functions */
+#define BUFFER_SIZE 512
 
 void printk_scan_metric(struct srcc_scan_metric *scan_metric)
 {
-    printk("[SIROCCO] SCAN RX: %d %02x:%02x:%02x:%02x:%02x:%02x 0x%x 0x%x %hu %hu %hu %d\n",
+    printk("[SIROCCO] SCAN RX: %u %02x:%02x:%02x:%02x:%02x:%02x 0x%x 0x%x %hu %hu %hu %d\n",
            scan_metric->timestamp,
            scan_metric->adv_addr[5],
            scan_metric->adv_addr[4],
@@ -34,10 +51,7 @@ void printk_scan_metric(struct srcc_scan_metric *scan_metric)
     );
 }
 
-
-
-#define BUFFER_SIZE 512
-
+// TODO: make it independant from struct srcc_scan_metric
 void printk_scan_pdu(struct srcc_scan_metric *scan_metric)
 {
     /* Following is the structure of a Link Layer PDU:
@@ -51,7 +65,7 @@ void printk_scan_pdu(struct srcc_scan_metric *scan_metric)
      * +-----------------+----------------------------------------------+---------+
      */
     size_t len;
-    uint8_t buffer[512];
+    uint8_t buffer[BUFFER_SIZE];
     int offset;
 
     /* access address */
@@ -154,6 +168,68 @@ void printk_scan_pdu(struct srcc_scan_metric *scan_metric)
 }
 
 
+struct timeout_data {
+    uint32_t threshold;
+    uint64_t keys[5];   /* Let's not delete more than 5 entries at a time */
+    uint8_t len;
+};
+
+static void remove_timeout_callback(uint64_t key, uint64_t value, void *cookie)
+{
+    struct timeout_data *timeout = (struct timeout_data *)cookie;
+    struct scan_data *scan_data = (struct scan_data *)((uint32_t)value);
+
+    //printk("Cookie->threshold is %u\n", timeout->threshold);
+    //printk("(%#llx -> %#llx) ", key, value);
+
+    /* Let's not delete more than 5 entries at a time */
+    if (timeout->len > 5) {
+        return;
+    }
+
+    if (scan_data->previous_metric.timestamp < timeout->threshold) {
+        timeout->keys[timeout->len] = key;
+        timeout->len++;
+    }
+}
+
+/* Remove all entries where previous_metric.timestamp is older than TIMEOUT */
+static int remove_timeout_entries()
+{
+    struct timeout_data timeout;
+    struct scan_data *scan_data;
+    uint64_t ptr;
+    bool success;
+    int count = 0;
+
+    timeout.len = 0;
+    timeout.threshold = k_cycle_get_32();
+    if (timeout.threshold > TIMEOUT) {
+        timeout.threshold -= TIMEOUT;
+    } else {
+        timeout.threshold = 0;
+    }
+
+    //printk("Threshold is %u\n", timeout.threshold);
+
+    sys_hashmap_foreach(&scan_hmap, remove_timeout_callback, &timeout);
+
+    for (int i=0; i<timeout.len; i++) {
+        success = sys_hashmap_remove(&scan_hmap, timeout.keys[i], &ptr);
+        if (success) {
+            scan_data = (struct scan_data *)((uint32_t)ptr);
+            //printk("Removed from hashmap %llx and freeing %p\n", timeout.keys[i], scan_data);
+            k_free(scan_data);
+            count++;
+        } else {
+            printk("Failed to remove from hashmap 0x%#x\n", ptr);
+        }
+    }
+
+    return count;
+}
+
+
 void run_scan_detection(struct srcc_scan_metric *scan_metric)
 {
     // For now, only print something
@@ -161,7 +237,10 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
     //printk_scan_pdu(scan_metric);
 
     uint64_t addr = 0;
-    uint64_t counter = 0;
+    struct scan_data *scan_data;
+    uint32_t adv_interval = 0;
+    uint64_t hvalue;
+    bool success;
 
 
     switch (scan_metric->type) {
@@ -177,12 +256,58 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
             break;
     }
 
-    if (sys_hashmap_get(&scan_hmap, addr, &counter)) {
-        counter++;
+    if (sys_hashmap_get(&scan_hmap, addr, &hvalue)) {
+
+        scan_data = (struct scan_data *)((uint32_t)hvalue);
+
+    } else {
+        /* Init new scan_data */
+        scan_data = k_malloc(sizeof(struct scan_data));
+        if (scan_data == NULL) {
+            //printk("Failed to allocated scan_data...try freeing old entries...\n");
+            remove_timeout_entries();
+            //printk("try again...\n");
+            scan_data = k_malloc(sizeof(struct scan_data));
+            if (scan_data == NULL) {
+                //printk("...no sucess, leaving!\n");
+                return;
+            }
+            //printk("...yes!\n");
+        }
+        //printk("Allocated scan_data %p\n", scan_data);
+
+        memset(scan_data, 0, sizeof(struct scan_data));
+
+        success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
+        if (!success) {
+            //printk("Failed to insert into scan_hmap...try freeing...\n");
+            remove_timeout_entries();
+            success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
+            if (!success) {
+                //printk("...no sucess, leaving!\n");
+                k_free(scan_data);
+                return;
+            }
+            //printk("good, continuing!\n");
+        }
     }
 
-    sys_hashmap_insert(&scan_hmap, addr, counter, NULL);
+    scan_data->counter++;
+    /* Compute the ADV interval from the receiver perspective */
+    adv_interval = scan_metric->timestamp - scan_data->previous_metric.timestamp;
 
-    printk("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu\n", addr, counter);
+    printk("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu"
+           " %hu : %u | %u : %u"
+           "\n",
+           addr, scan_data->counter,
+           scan_metric->interval, adv_interval,
+           scan_metric->timestamp, scan_data->previous_metric.timestamp
+    );
 
+    /* Clean up routines */
+    /* Save previous metric */
+    memcpy(&scan_data->previous_metric, scan_metric,
+           sizeof(struct srcc_scan_metric));
+    remove_timeout_entries();
+    //printk("Hashmap size: %u\n", sys_hashmap_size(&scan_hmap));
 }

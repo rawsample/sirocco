@@ -7,7 +7,7 @@
 
 void printk_conn_metric(struct srcc_conn_metric *conn_metric)
 {
-    printk("[SIROCCO] CONN: %d %02x:%02x:%02x:%02x 0x%x %hu %hu\n",
+    printk("[SIROCCO] CONN: %u %02x:%02x:%02x:%02x 0x%x %hu %hu\n",
            conn_metric->timestamp,
            conn_metric->access_addr[0],
            conn_metric->access_addr[1],

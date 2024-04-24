@@ -8,17 +8,10 @@
 
 #include <zephyr/bluetooth/sirocco.h>
 
+#include "scan.h"
 
-// For a 64 MHz processor
+
 #define TIMEOUT 1000000
-
-
-struct scan_data {
-    uint64_t counter;
-    //uint32_t timestamps[32];
-    struct srcc_scan_metric previous_metric;
-};
-
 
 //SYS_HASHMAP_DEFINE_STATIC(scan_hmap);
 #define SCAN_MAX_ENTRY 32   /* Note: If > 255, update struct timeout_data below */
@@ -168,6 +161,33 @@ void printk_scan_pdu(struct srcc_scan_metric *scan_metric)
 }
 
 
+static struct scan_data *malloc_scan_data(void)
+{
+    struct scan_data *scan_data;
+
+    scan_data = k_calloc(1, sizeof(struct scan_data));
+    if (scan_data == NULL) {
+        printk("Failed to allocate memory for scan_data :(\n");
+        return NULL;
+    }
+
+#if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
+    init_oasis_gattacker_data(&scan_data->oasis_gattacker_data);
+#endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
+
+    return scan_data;
+}
+
+static void free_scan_data(struct scan_data *scan_data)
+{
+#if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
+    clean_oasis_gattacker_data(&scan_data->oasis_gattacker_data);
+#endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
+
+    k_free(scan_data);
+}
+
+
 struct timeout_data {
     uint32_t threshold;
     uint64_t keys[5];   /* Let's not delete more than 5 entries at a time */
@@ -219,10 +239,10 @@ static int remove_timeout_entries()
         if (success) {
             scan_data = (struct scan_data *)((uint32_t)ptr);
             //printk("Removed from hashmap %llx and freeing %p\n", timeout.keys[i], scan_data);
-            k_free(scan_data);
+            free_scan_data(scan_data);
             count++;
         } else {
-            printk("Failed to remove from hashmap 0x%#x\n", ptr);
+            printk("Failed to remove from hashmap 0x%#llx\n", ptr);
         }
     }
 
@@ -262,12 +282,12 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
 
     } else {
         /* Init new scan_data */
-        scan_data = k_malloc(sizeof(struct scan_data));
+        scan_data = malloc_scan_data();
         if (scan_data == NULL) {
             //printk("Failed to allocated scan_data...try freeing old entries...\n");
             remove_timeout_entries();
             //printk("try again...\n");
-            scan_data = k_malloc(sizeof(struct scan_data));
+            scan_data = malloc_scan_data();
             if (scan_data == NULL) {
                 //printk("...no sucess, leaving!\n");
                 return;
@@ -276,8 +296,6 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
         }
         //printk("Allocated scan_data %p\n", scan_data);
 
-        memset(scan_data, 0, sizeof(struct scan_data));
-
         success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
         if (!success) {
             //printk("Failed to insert into scan_hmap...try freeing...\n");
@@ -285,7 +303,7 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
             success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
             if (!success) {
                 //printk("...no sucess, leaving!\n");
-                k_free(scan_data);
+                free_scan_data(scan_data);
                 return;
             }
             //printk("good, continuing!\n");
@@ -296,6 +314,7 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
     /* Compute the ADV interval from the receiver perspective */
     adv_interval = scan_metric->timestamp - scan_data->previous_metric.timestamp;
 
+    /*
     printk("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu"
            " %hu : %u | %u : %u"
            "\n",
@@ -303,6 +322,13 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
            scan_metric->interval, adv_interval,
            scan_metric->timestamp, scan_data->previous_metric.timestamp
     );
+    */
+
+    /* Call detection modules here */
+    // TODO
+#if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
+    srcc_detect_oasis_gattacker(addr, scan_data, scan_metric);
+#endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     /* Clean up routines */
     /* Save previous metric */

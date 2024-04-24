@@ -171,6 +171,7 @@ struct __aligned(4) srcc_scan_metric {
     /* Meta data */
     uint32_t timestamp;
     uint16_t rssi;
+    uint8_t channel:2;
 
     /* Packet */
     uint16_t crc_is_valid;
@@ -293,6 +294,7 @@ void srcc_detect_btlejuice(struct srcc_metric *metric);
 #endif
 #if defined(CONFIG_BT_SRCC_GATTACKER)
 void srcc_detect_gattacker(struct srcc_metric *metric);
+void srcc_detect_oasis_gattacker(struct srcc_metric *metric);
 #endif
 #if defined(CONFIG_BT_SRCC_INJECTABLE)
 void srcc_detect_injectable(struct srcc_metric *metric);

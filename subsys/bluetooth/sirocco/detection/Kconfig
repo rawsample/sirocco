@@ -12,6 +12,12 @@ config BT_SRCC_BTLEJUICE
     help
         Enable BTLEJuice detection module
 
+config BT_SRCC_OASIS_GATTACKER
+    bool "Oasis GATTacker module"
+    depends on BT_SIROCCO
+    help
+        Enable Oasis GATTacker detection module
+
 config BT_SRCC_GATTACKER
     bool "Sirocco GATTacker module"
     depends on BT_SIROCCO

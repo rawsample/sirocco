@@ -125,6 +125,7 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
 #endif
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
+    item->metric.channel = lll->chan;
     item->metric.crc_is_valid = crc_ok;
     item->metric.type = pdu_adv->type;
     item->metric.len = pdu_adv->len;

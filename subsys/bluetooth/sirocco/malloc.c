@@ -177,6 +177,7 @@ void srcc_free_conn_item(void *ptr)
     return free_item(&conn_allocator, ptr);
 }
 
+
 /* Advertisement allocator */
 int srcc_init_adv_alloc(uint32_t count)
 {

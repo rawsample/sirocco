@@ -3,7 +3,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/hash_map.h>
 
-
 #include<zephyr/bluetooth/sirocco.h>
 
 

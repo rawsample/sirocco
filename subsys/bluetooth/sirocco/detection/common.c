@@ -14,18 +14,18 @@ void srcc_alert(enum alert_num nb, const char *fmt, ...)
 
     const char *prefix = "";
     switch (nb) {
-        case NO_ALERT:      prefix = ": ";
-        case BTLEJACK:      prefix = "BTLJack: ";
-        case BTLEJUICE:     prefix = "BTLEJuice: ";
-        case GATTACKER:     prefix = "GATTacker: ";
-        case INJECTABLE:    prefix = "InjectaBLE: ";
-        case JAMMING:       prefix = "Jamming: ";
-        case KNOB:          prefix = "KNOB: ";
+        case NO_ALERT:      prefix = " "; break;
+        case BTLEJACK:      prefix = "BTLJack: "; break;
+        case BTLEJUICE:     prefix = "BTLEJuice: "; break;
+        case GATTACKER:     prefix = "GATTacker: "; break;
+        case INJECTABLE:    prefix = "InjectaBLE: "; break;
+        case JAMMING:       prefix = "Jamming: "; break;
+        case KNOB:          prefix = "KNOB: "; break;
     }
     snprintf(buffer, sizeof(buffer), "%s", prefix);
     vsnprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), fmt, ap);
 
-    printk("[SIROCCO ALERT] %s\n", buffer);
+    printk("[SIROCCO >ALERT<] %s\n", buffer);
 
 	va_end(ap);
 }

@@ -319,12 +319,14 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
     */
 
     /* Call detection modules here */
-#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
-    srcc_detect_btlejuice(scan_metric);
-#endif  /* CONFIG_BT_SRCC_BTLEJUICE && CONFIG_BT_PERIPHERAL */
+//#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
+//    srcc_detect_btlejuice(scan_metric);
+//#endif  /* CONFIG_BT_SRCC_BTLEJUICE && CONFIG_BT_PERIPHERAL */
+
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
     srcc_detect_oasis_gattacker(addr, scan_data, scan_metric);
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
+
 
     /* Clean up routines */
     /* Save previous metric */

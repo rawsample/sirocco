@@ -15,53 +15,27 @@
 static bool is_scanning = false;
 
 
-/* Called from scan messages */
-void srcc_detect_btlejuice(struct srcc_scan_metric *scan_metric)
+static void srcc_btlejuice_cb(const bt_addr_le_t *remote_addr, int8_t rssi,
+                                 uint8_t adv_type, struct net_buf_simple *buf)
 {
-    return;
-
 	bt_addr_le_t local_addrs[CONFIG_BT_ID_MAX];
-    int count = 1;
+	size_t count = 1;
     int res = 0;
 
     /* Get current local addresses */
 	bt_id_get(local_addrs, &count);
 
     for (int i=0; i<count; i++) {
-        res = memcmp(&local_addrs[i].a, scan_metric->adv_addr, BDADDR_SIZE*sizeof(uint8_t));
+
+        res = memcmp(&local_addrs[i].a.val, &remote_addr->a.val, BDADDR_SIZE*sizeof(uint8_t));
         if (res == 0) {
             printk(">>> [SIROCCO] BTLEJuice attack detected !!!\n");
-            srcc_alert(BTLEJUICE, "%x", (uint32_t) scan_metric->adv_addr);
+            srcc_alert(BTLEJUICE, "%02X:%02X:%02X:%02X:%02X:%02X",
+                       remote_addr->a.val[5], remote_addr->a.val[4], remote_addr->a.val[3],
+                       remote_addr->a.val[2], remote_addr->a.val[1], remote_addr->a.val[0]);
         }
     }
 }
-
-/* It is also possible to do the detection with the already existing callback mechanism 
-static void sirocco_btlejuice_cb(const bt_addr_le_t *remote_addr, int8_t rssi, uint8_t adv_type,
-		    struct net_buf_simple *buf)
-{
-	char laddr_str[BT_ADDR_LE_STR_LEN];
-	char raddr_str[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_t local_addrs[CONFIG_BT_ID_MAX];
-	size_t count = 1;
-    int res = 0;
-
-	bt_id_get(local_addrs, &count);
-
-    for (int i=0; i<count; i++) {
-        // Note: the conversion & comparison could be done more straight forward.
-        bt_addr_le_to_str(&local_addrs[i], laddr_str, BT_ADDR_LE_STR_LEN);
-        bt_addr_le_to_str(remote_addr, raddr_str, BT_ADDR_LE_STR_LEN);
-
-        res = bt_addr_cmp(&remote_addr->a, &local_addrs[i].a);
-        if (res == 0) {
-            printk(">>> [SIROCCO] BTLEJuice attack detected !!!\n");
-            //srcc_alert(BTLEJUICE, "%x", );
-        }
-    }
-}
-*/
 
 
 /* Trigger on receiving a CONNECT_IND */
@@ -76,8 +50,7 @@ static void srcc_start_btlejuice_bg_scan(void)
     };
 
     /* Start scanning */
-	err = bt_le_scan_start(&scan_param, NULL);
-	//err = bt_le_scan_start(&scan_param, sirocco_btlejuice_cb);
+	err = bt_le_scan_start(&scan_param, srcc_btlejuice_cb);
 	if (err) {
 		printk("Starting scanning failed (err %d)\n", err);
 		return;

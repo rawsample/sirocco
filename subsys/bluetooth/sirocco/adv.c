@@ -67,10 +67,6 @@ void run_adv_rx_detection(struct srcc_adv_metric *adv_metric)
     printk_adv_metric(ADV_RX, adv_metric);
 
     /* Call detection modules here */
-#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
-    srcc_start_btlejuice_bg_scan(adv_metric);
-#endif  /* CONFIG_BT_SRCC_BTLEJUICE */
-
 }
 
 void run_adv_tx_detection(struct srcc_adv_metric *adv_metric)

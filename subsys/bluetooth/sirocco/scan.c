@@ -8,10 +8,12 @@
 
 #include <zephyr/bluetooth/sirocco.h>
 
+#include "timing.h"
 #include "scan.h"
 
 
-#define TIMEOUT 1000000
+#define TIMEOUT_MSEC 30000   /* in ms */
+//#define TIMEOUT_CYCLES (TIMEOUT_SEC * CYCLES_PER_SEC)
 
 //SYS_HASHMAP_DEFINE_STATIC(scan_hmap);
 #define SCAN_MAX_ENTRY 32   /* Note: If > 255, update struct timeout_data below */
@@ -189,7 +191,7 @@ static void free_scan_data(struct scan_data *scan_data)
 
 
 struct timeout_data {
-    uint32_t threshold;
+    uint32_t threshold; /* in ms */
     uint64_t keys[5];   /* Let's not delete more than 5 entries at a time */
     uint8_t len;
 };
@@ -223,12 +225,7 @@ static int remove_timeout_entries()
     int count = 0;
 
     timeout.len = 0;
-    timeout.threshold = k_cycle_get_32();
-    if (timeout.threshold > TIMEOUT) {
-        timeout.threshold -= TIMEOUT;
-    } else {
-        timeout.threshold = 0;
-    }
+    timeout.threshold = srcc_timing_capture_ms() - TIMEOUT_MSEC;
 
     //printk("Threshold is %u\n", timeout.threshold);
 
@@ -250,7 +247,7 @@ static int remove_timeout_entries()
 }
 
 
-void run_scan_detection(struct srcc_scan_metric *scan_metric)
+void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
 {
     // For now, only print something
     //printk_scan_metric(scan_metric);
@@ -258,7 +255,6 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
 
     uint64_t addr = 0;
     struct scan_data *scan_data;
-    uint32_t adv_interval = 0;
     uint64_t hvalue;
     bool success;
 
@@ -311,8 +307,6 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
     }
 
     scan_data->counter++;
-    /* Compute the ADV interval from the receiver perspective */
-    adv_interval = scan_metric->timestamp - scan_data->previous_metric.timestamp;
 
     /*
     printk("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu"
@@ -325,7 +319,9 @@ void run_scan_detection(struct srcc_scan_metric *scan_metric)
     */
 
     /* Call detection modules here */
-    // TODO
+#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
+    srcc_detect_btlejuice(scan_metric);
+#endif  /* CONFIG_BT_SRCC_BTLEJUICE && CONFIG_BT_PERIPHERAL */
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
     srcc_detect_oasis_gattacker(addr, scan_data, scan_metric);
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */

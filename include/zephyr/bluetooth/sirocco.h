@@ -112,6 +112,8 @@ enum event_type {
     CONN_TX  = 0x1,
     SCAN_RX  = 0x2,
     SCAN_TX  = 0x3,
+    ADV_RX   = 0x4,
+    ADV_TX   = 0x5,
 };
 
 /* Metrics
@@ -138,6 +140,7 @@ struct __aligned(4) metric_item {
 /* Taken from controller/ll_sw/pdu.h */
 #define BDADDR_SIZE   6
 #define PDU_AC_LEG_DATA_SIZE_MAX   31
+#define PDU_CHANNEL_MAP_SIZE 5
 
 struct pdu_adv_scan_req {
     uint8_t scan_addr[BDADDR_SIZE];
@@ -159,7 +162,33 @@ struct pdu_adv_direct_ind {
     uint8_t tgt_addr[BDADDR_SIZE];
 } __packed;
 
+struct pdu_adv_connect_ind {
+	uint8_t init_addr[BDADDR_SIZE];
+	uint8_t adv_addr[BDADDR_SIZE];
+	struct {
+		uint8_t  access_addr[4];
+		uint8_t  crc_init[3];
+		uint8_t  win_size;
+		uint16_t win_offset;
+		uint16_t interval;
+		uint16_t latency;
+		uint16_t timeout;
+		uint8_t  chan_map[PDU_CHANNEL_MAP_SIZE];
+#ifdef CONFIG_LITTLE_ENDIAN
+		uint8_t  hop:5;
+		uint8_t  sca:3;
+#else
+		uint8_t  sca:3;
+		uint8_t  hop:5;
+#endif /* CONFIG_LITTLE_ENDIAN */
+	} __packed;
+} __packed;
+
 #endif  /* BDADDR_SIZE */
+
+/* Note: The timestamp is is ms, therefore an overflow should happens every
+ * ~49 days.
+ */
 
 struct __aligned(4) srcc_scan_metric {
 
@@ -169,7 +198,7 @@ struct __aligned(4) srcc_scan_metric {
     uint32_t ticks_window;            // similar
 
     /* Meta data */
-    uint32_t timestamp;
+    uint32_t timestamp;               /* in ms */
     uint16_t rssi;
     uint8_t channel:2;
 
@@ -198,6 +227,33 @@ struct __aligned(4) srcc_scan_item {
 } __packed;
 
 
+/* ADV metrics */
+
+struct __aligned(4) srcc_adv_metric {
+
+    /* Meta data */
+    uint32_t timestamp;               /* in ms */
+    uint16_t rssi;
+
+    /* Packet */
+    uint16_t crc_is_valid;
+    /* Header */
+    uint8_t type:4;
+    uint8_t len;
+
+    /* Payload */
+    union {
+        struct pdu_adv_connect_ind connect_ind;
+        struct pdu_adv_adv_ind adv_ind;
+        struct pdu_adv_direct_ind direct_ind;
+    } __packed;
+} __packed;
+
+struct __aligned(4) srcc_adv_item {
+    void *fifo_reserved;
+    struct srcc_adv_metric metric;
+} __packed;
+
 /* CONN metrics */
 
 struct __aligned(4) srcc_conn_metric {
@@ -206,7 +262,7 @@ struct __aligned(4) srcc_conn_metric {
     uint8_t access_addr[4];
 
     /* Meta data */
-    uint32_t timestamp;
+    uint32_t timestamp;             /* in ms */
     uint16_t rssi;
 
     /* Packet */
@@ -240,11 +296,22 @@ struct srcc_cb {
   void (*conn_tx)(struct srcc_conn_metric *);
   void (*scan_rx)(struct srcc_scan_metric *);
   //void (*scan_tx)(void);
+  //void (*adv_rx)(struct srcc_adv_metric *);
   struct srcc_cb *_next;
 };
 
 void srcc_init(void);
+void srcc_cleanup(void);
 void srcc_cb_register(struct srcc_cb *cb);
+
+
+/* NRF Timer API */
+void srcc_timing_init(void);
+void srcc_timing_start(void);
+void srcc_timing_stop(void);
+uint32_t srcc_timing_cycles_to_ms(uint32_t cycles);
+uint32_t srcc_timing_capture_cycles(void);
+uint32_t srcc_timing_capture_ms(void);
 
 
 
@@ -254,6 +321,8 @@ void srcc_cb_register(struct srcc_cb *cb);
 void srcc_notify_conn_rx(struct srcc_conn_item *item);
 void srcc_notify_conn_tx(struct srcc_conn_item *item);
 void srcc_notify_scan_rx(struct srcc_scan_item *item);
+void srcc_notify_adv_rx(struct srcc_adv_item *item);
+void srcc_notify_adv_tx(struct srcc_adv_item *item);
 
 
 int srcc_init_conn_alloc(uint32_t count);
@@ -264,12 +333,19 @@ void *srcc_malloc_conn_item(void);
 void *srcc_malloc_scan_item(void);
 void srcc_free_conn_item(void *ptr);
 void srcc_free_scan_item(void *ptr);
+int srcc_init_adv_alloc(uint32_t count);
+void srcc_clean_adv_alloc(void);
+void *srcc_malloc_adv_item(void);
+void srcc_free_adv_item(void *ptr);
 
 
 void printk_conn_metric(struct srcc_conn_metric *conn_metric);
 void printk_scan_metric(struct srcc_scan_metric *scan_metric);
-void run_conn_detection(struct srcc_conn_metric *conn_metric);
-void run_scan_detection(struct srcc_scan_metric *scan_metric);
+void run_conn_rx_detection(struct srcc_conn_metric *conn_metric);
+void run_conn_tx_detection(struct srcc_conn_metric *conn_metric);
+void run_scan_rx_detection(struct srcc_scan_metric *scan_metric);
+void run_adv_rx_detection(struct srcc_adv_metric *adv_metric);
+void run_adv_tx_detection(struct srcc_adv_metric *adv_metric);
 
 
 /* Detection modules */
@@ -290,7 +366,7 @@ void srcc_alert(enum alert_num nb, const char *fmt, ...);
 void srcc_detect_btlejack(struct srcc_metric *metric);
 #endif
 #if defined(CONFIG_BT_SRCC_BTLEJUICE)
-void srcc_detect_btlejuice(struct srcc_metric *metric);
+void srcc_detect_btlejuice(struct srcc_scan_metric *metric);
 #endif
 #if defined(CONFIG_BT_SRCC_GATTACKER)
 void srcc_detect_gattacker(struct srcc_metric *metric);

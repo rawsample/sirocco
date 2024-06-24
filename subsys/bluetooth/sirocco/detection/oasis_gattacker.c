@@ -8,14 +8,13 @@
 #include "../scan.h"
 
 
-#define MAX_ADV_DELAY 10000
+#define MAX_ADV_DELAY 300    /* in ms */
+//#define MAX_ADV_DELAY_CYCLES (MAX_ADV_DELAY * CYCLES_PER_SEC)
 
 
 
 void init_oasis_gattacker_data(struct oasis_gattacker_data *data)
 {
-    int ret;
-
     data->threshold = 0;
     data->last_channel = 0;
     ring_buf_init(&data->adv_intervals.rb, RBUFF_SIZE, data->adv_intervals.buf);
@@ -68,29 +67,36 @@ static int estimate_threshold(struct scan_data *data,
         }
     }
 
-    min_interval /= 625;
-    min_interval *= 625;
-
-    printk("[*] min_interval: %u\n", min_interval);
-    if (min_interval < 2*MAX_ADV_DELAY) {
-        printk("\n***\n[*] buf: ");
+    printk("[*] min_interval: %u ms - ", min_interval);
+    if (min_interval < MAX_ADV_DELAY) {
+        printk("buf: ");
         for (int i=0; i < (RBUFF_SIZE/sizeof(uint32_t)); i++) {
             printk("%u ", buf[i]);
         }
-        printk("\n***\n\n");
+        printk("\n");
     }
 
     /* Compute the detection threshold */
     if (data->oasis_gattacker_data.threshold == 0
-        || min_interval > (data->oasis_gattacker_data.threshold + MAX_ADV_DELAY)) {
+        || min_interval >  MAX_ADV_DELAY) {
 
-        //data->oasis_gattacker_data.threshold = min_interval - MAX_ADV_DELAY;
-        if (min_interval > MAX_ADV_DELAY) {
-            data->oasis_gattacker_data.threshold = min_interval - MAX_ADV_DELAY;
+        data->oasis_gattacker_data.threshold = MAX_ADV_DELAY;
+        /*
+        if (min_interval > MAX_ADV_DELAY_CYCLES) {
+            data->oasis_gattacker_data.threshold = min_interval - MAX_ADV_DELAY_CYCLES;
         } else {
-            data->oasis_gattacker_data.threshold = MAX_ADV_DELAY;
+            data->oasis_gattacker_data.threshold = MAX_ADV_DELAY_CYCLES;
         }
-        printk("Set threshold to %u\n", data->oasis_gattacker_data.threshold);
+        */
+        //printk("Set threshold to %u\n", data->oasis_gattacker_data.threshold);
+        printk("[>>>] %02x:%02x:%02x:%02x:%02x:%02x - set threshold to %u ms\n",
+            metric->adv_ind.addr[5],
+            metric->adv_ind.addr[4],
+            metric->adv_ind.addr[3],
+            metric->adv_ind.addr[2],
+            metric->adv_ind.addr[1],
+            metric->adv_ind.addr[0],
+            data->oasis_gattacker_data.threshold);
     }
 
     return 1;
@@ -136,15 +142,22 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *data,
         return;
     }
 
-    /* Calculare the interval between two ADV_IND */
-    adv_interval = metric->timestamp - data->previous_metric.timestamp;
-    adv_interval = k_cyc_to_us_near32(adv_interval);
-    if (adv_interval < 2*MAX_ADV_DELAY) {
-        printk("ts = %u, prev_ts = %u, interval = %u\n",
-                k_cyc_to_us_near32(metric->timestamp),
-                k_cyc_to_us_near32(data->previous_metric.timestamp),
-                adv_interval);
-    }
+    //adv_interval = srcc_timing_capture_ms();
+    //printk("current timestamp %u ms\n", adv_interval);
+
+    /* Calculare the interval between two ADV_IND in cycles */
+    adv_interval = metric->timestamp - data->previous_adv_timestamp;
+    //printk("[*] adv_interval %u - timestamp %u - previous %u\n", adv_interval, metric->timestamp, data->previous_adv_timestamp);
+    /*
+    */
+    printk("[*] %02x:%02x:%02x:%02x:%02x:%02x - %u ms\n",
+           metric->adv_ind.addr[5],
+           metric->adv_ind.addr[4],
+           metric->adv_ind.addr[3],
+           metric->adv_ind.addr[2],
+           metric->adv_ind.addr[1],
+           metric->adv_ind.addr[0],
+           adv_interval);
 
     /* Estimate the threshold */
     if (estimate_threshold(data, metric, adv_interval) >= 0) {

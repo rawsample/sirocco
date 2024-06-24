@@ -8,7 +8,7 @@ config BT_SRCC_BTLEJACK
 
 config BT_SRCC_BTLEJUICE
     bool "Sirocco BTLEJuice module"
-    depends on BT_SIROCCO
+    depends on BT_SIROCCO && BT_PERIPHERAL
     help
         Enable BTLEJuice detection module
 
@@ -47,6 +47,7 @@ config BT_SRCC_ALL
     select BT_SRCC_BTLEJACK
     select BT_SRCC_BTLEJUICE
     select BT_SRCC_GATTACKER
+    select BT_SRCC_OASIS_GATTACKER
     select BT_SRCC_INJECTABLE
     select BT_SRCC_JAMMING
     select BT_SRCC_KNOB

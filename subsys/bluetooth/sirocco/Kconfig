@@ -3,6 +3,7 @@
 menuconfig BT_SIROCCO
 	bool "Sirocco Bluetooth IDS"
 	depends on BT_LL_SW_SPLIT
+    #&& CONFIG_SYS_HASH_MAP && CONFIG_SYS_HASH_FUNC32 && CONFIG_HEAP_MEM_POOL_SIZE && CONFIG_NRFX_TIMER2
 	help
 	  This option enables the Sirocco Bluetooth intrusion detection system.
 

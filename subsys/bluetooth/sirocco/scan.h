@@ -7,8 +7,7 @@
 
 
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-//#define RBUFF_SIZE 128
-#define RBUFF_SIZE 64
+#define RBUFF_SIZE 128
 
 struct adv_intervals {
   struct ring_buf rb;
@@ -28,7 +27,6 @@ struct oasis_gattacker_data {
 struct scan_data {
     uint64_t counter;
     struct srcc_scan_metric previous_metric;
-    //uint32_t timestamps[32];
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
     struct oasis_gattacker_data oasis_gattacker_data;
     //struct srcc_scan_metric previous_adv_metric;
@@ -43,3 +41,7 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *data, struc
 void init_oasis_gattacker_data(struct oasis_gattacker_data *data);
 void clean_oasis_gattacker_data(struct oasis_gattacker_data *data);
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
+
+#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
+void srcc_detect_btlejuice(struct srcc_scan_metric *scan_metric);
+#endif  /* CONFIG_BT_SRCC_BTLEJUICE */

@@ -13,8 +13,10 @@
 K_FIFO_DEFINE(conn_rx_fifo);
 K_FIFO_DEFINE(conn_tx_fifo);
 K_FIFO_DEFINE(scan_rx_fifo);
+K_FIFO_DEFINE(adv_rx_fifo);
+K_FIFO_DEFINE(adv_tx_fifo);
 
-struct k_poll_event events[3] = {
+struct k_poll_event events[5] = {
     K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
                                     K_POLL_MODE_NOTIFY_ONLY,
                                     &conn_rx_fifo, 0),
@@ -24,6 +26,12 @@ struct k_poll_event events[3] = {
     K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
                                     K_POLL_MODE_NOTIFY_ONLY,
                                     &scan_rx_fifo, 0),
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+                                    K_POLL_MODE_NOTIFY_ONLY,
+                                    &adv_rx_fifo, 0),
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+                                    K_POLL_MODE_NOTIFY_ONLY,
+                                    &adv_tx_fifo, 0),
 };
 
 
@@ -118,10 +126,14 @@ static void sirocco_main_loop(void *, void *, void *)
     int ret;
     struct srcc_scan_item *scan_item;
     struct srcc_conn_item *conn_item;
+    struct srcc_adv_item *adv_item;
 
     printk("[SIROCCO] sizeof(scan_metric) = %d bytes\n"
-           "[SIROCCO] sizeof(conn_metric) = %d bytes\n",
-           sizeof(struct srcc_scan_metric), sizeof(struct srcc_conn_metric));
+           "[SIROCCO] sizeof(conn_metric) = %d bytes\n"
+           "[SIROCCO] sizeof(adv_metric) = %d bytes\n",
+           sizeof(struct srcc_scan_metric),
+           sizeof(struct srcc_conn_metric),
+           sizeof(struct srcc_adv_metric));
 
 	while(1) {
 		//printk("[SIROCCO] main loop\n");
@@ -133,23 +145,35 @@ static void sirocco_main_loop(void *, void *, void *)
 
         if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             conn_item = k_fifo_get(&conn_rx_fifo, K_FOREVER);
-            run_conn_detection(&conn_item->metric);
+            run_conn_rx_detection(&conn_item->metric);
             srcc_free_conn_item(conn_item);
 
         } else if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             conn_item = k_fifo_get(&conn_tx_fifo, K_FOREVER);
-            run_conn_detection(&conn_item->metric);
+            run_conn_tx_detection(&conn_item->metric);
             srcc_free_conn_item(conn_item);
 
         } else if (events[2].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             scan_item = k_fifo_get(&scan_rx_fifo, K_FOREVER);
-            run_scan_detection(&scan_item->metric);
+            run_scan_rx_detection(&scan_item->metric);
             srcc_free_scan_item(scan_item);
+
+        } else if (events[3].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+            adv_item = k_fifo_get(&adv_rx_fifo, K_FOREVER);
+            run_adv_rx_detection(&adv_item->metric);
+            srcc_free_adv_item(adv_item);
+
+        } else if (events[4].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+            adv_item = k_fifo_get(&adv_tx_fifo, K_FOREVER);
+            run_adv_tx_detection(&adv_item->metric);
+            srcc_free_adv_item(adv_item);
         }
 
         events[0].state = K_POLL_STATE_NOT_READY;
         events[1].state = K_POLL_STATE_NOT_READY;
         events[2].state = K_POLL_STATE_NOT_READY;
+        events[3].state = K_POLL_STATE_NOT_READY;
+        events[4].state = K_POLL_STATE_NOT_READY;
 
         //k_sleep(K_MSEC(1000));
 	}
@@ -217,7 +241,7 @@ void srcc_notify_conn_tx(struct srcc_conn_item *item)
 
 void srcc_notify_scan_rx(struct srcc_scan_item *item)
 {
-    //printk("[TX ISR] sirocco\n");
+    //printk("[RX ISR] sirocco\n");
 
     k_fifo_put(&scan_rx_fifo, item);
 
@@ -225,6 +249,32 @@ void srcc_notify_scan_rx(struct srcc_scan_item *item)
     for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
         if(cb->scan_rx) {
             cb->scan_rx(item);
+        }
+    }
+    */
+}
+
+void srcc_notify_adv_rx(struct srcc_adv_item *item)
+{
+    k_fifo_put(&adv_rx_fifo, item);
+
+    /* Callbacks
+    for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
+        if(cb->adv_rx) {
+            cb->adv_rx(item);
+        }
+    }
+    */
+}
+
+void srcc_notify_adv_tx(struct srcc_adv_item *item)
+{
+    k_fifo_put(&adv_tx_fifo, item);
+
+    /* Callbacks
+    for (struct srcc_cb *cb = callback_list; cb; cb = cb->_next) {
+        if(cb->adv_tx) {
+            cb->adv_tx(item);
         }
     }
     */
@@ -247,6 +297,21 @@ void srcc_init(void)
     if (ret < 0) {
         return;
     }
+    ret = srcc_init_adv_alloc(SRCC_MALLOC_COUNT_ITEMS);
+    if (ret < 0) {
+        return;
+    }
 
+    /* Initialize timing subsystem for taking timestamps */
+    srcc_timing_init();
+    srcc_timing_start();
+
+    printk("Sirocco initialized\n");
     return;    
+}
+
+void srcc_cleanup(void)
+{
+    /* Note: don't do this if the application still needs it? */
+    srcc_timing_stop();
 }

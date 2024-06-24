@@ -48,6 +48,8 @@
 #include "lll_prof_internal.h"
 #include "lll_df_internal.h"
 
+#include "lll_sirocco.h"
+
 #include "hal/debug.h"
 
 #define PDU_FREE_TIMEOUT K_SECONDS(5)
@@ -1170,6 +1172,10 @@ static void isr_tx(void *param)
 		node_rx_prof = lll_prof_reserve();
 	}
 
+#if defined(CONFIG_BT_SIROCCO)
+	lll_srcc_adv_tx(param);
+#endif /* CONFIG_BT_SIROCCO */
+
 	/* Clear radio tx status and events */
 	lll_isr_tx_status_reset();
 
@@ -1248,6 +1254,9 @@ static void isr_rx(void *param)
 	uint8_t rssi_ready;
 	uint8_t trx_done;
 	uint8_t crc_ok;
+#if defined(CONFIG_BT_SIROCCO)
+	uint32_t rssi_value;
+#endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {
 		lll_prof_latency_capture();
@@ -1267,6 +1276,9 @@ static void isr_rx(void *param)
 			irkmatch_id = FILTER_IDX_NONE;
 		}
 		rssi_ready = radio_rssi_is_ready();
+#if defined(CONFIG_BT_SIROCCO)
+		rssi_value = radio_rssi_get();
+#endif /* CONFIG_BT_SIROCCO */
 	} else {
 		crc_ok = devmatch_ok = irkmatch_ok = rssi_ready = 0U;
 		devmatch_id = irkmatch_id = FILTER_IDX_NONE;
@@ -1274,6 +1286,10 @@ static void isr_rx(void *param)
 
 	/* Clear radio status and events */
 	lll_isr_status_reset();
+
+#if defined(CONFIG_BT_SIROCCO)
+	lll_srcc_adv_rx(param, crc_ok, rssi_value);
+#endif /* CONFIG_BT_SIROCCO */
 
 	/* No Rx */
 	if (!trx_done) {

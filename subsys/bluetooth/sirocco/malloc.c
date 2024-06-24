@@ -25,6 +25,7 @@ struct srcc_alloc {
 
 static struct srcc_alloc conn_allocator = { NULL, NULL, 0, 0, 0 };
 static struct srcc_alloc scan_allocator = { NULL, NULL, 0, 0, 0 };
+static struct srcc_alloc adv_allocator = { NULL, NULL, 0, 0, 0 };
 
 
 
@@ -130,9 +131,10 @@ static void free_item(struct srcc_alloc *allocator, void *ptr)
 }
 
 
-/* */
+/* API */
 
 
+/* Scan allocator */
 int srcc_init_scan_alloc(uint32_t count)
 {
     return init_malloc_item(&scan_allocator, count, sizeof(struct srcc_scan_item));
@@ -141,7 +143,6 @@ int srcc_init_scan_alloc(uint32_t count)
 void srcc_clean_scan_alloc(void)
 {
     return clean_malloc_item(&scan_allocator);
-
 }
 
 void *srcc_malloc_scan_item(void)
@@ -155,6 +156,7 @@ void srcc_free_scan_item(void *ptr)
 }
 
 
+/* Conn allocator */
 int srcc_init_conn_alloc(uint32_t count)
 {
     return init_malloc_item(&conn_allocator, count, sizeof(struct srcc_conn_item));
@@ -163,7 +165,6 @@ int srcc_init_conn_alloc(uint32_t count)
 void srcc_clean_conn_alloc(void)
 {
     return clean_malloc_item(&conn_allocator);
-
 }
 
 void *srcc_malloc_conn_item(void)
@@ -174,4 +175,25 @@ void *srcc_malloc_conn_item(void)
 void srcc_free_conn_item(void *ptr)
 {
     return free_item(&conn_allocator, ptr);
+}
+
+/* Advertisement allocator */
+int srcc_init_adv_alloc(uint32_t count)
+{
+    return init_malloc_item(&adv_allocator, count, sizeof(struct srcc_adv_item));
+}
+
+void srcc_clean_adv_alloc(void)
+{
+    return clean_malloc_item(&adv_allocator);
+}
+
+void *srcc_malloc_adv_item(void)
+{
+    return malloc_item(&adv_allocator);
+}
+
+void srcc_free_adv_item(void *ptr)
+{
+    return free_item(&adv_allocator, ptr);
 }

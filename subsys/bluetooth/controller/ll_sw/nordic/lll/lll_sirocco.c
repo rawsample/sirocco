@@ -16,6 +16,8 @@
 #include "lll_df_types.h"
 #include "lll_scan.h"
 #include "lll_conn.h"
+#include "lll_adv_types.h"
+#include "lll_adv.h"
 
 #include "lll_sirocco.h"
 
@@ -40,10 +42,10 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     //printk("SCAN RX COUNT = %d\n", scan_rx_count);
     //printk("metric_item size = %d bytes", sizeof(struct metric_item));
 
-    timestamp = k_cycle_get_32();
+    timestamp = srcc_timing_capture_ms();
 
     pdu_data = radio_pkt_get();
-    
+
     item = srcc_malloc_conn_item();
     if (item == NULL) {
         printk("Failed to allocate memory from the heap for conn rx item :(\n");
@@ -66,7 +68,7 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     struct pdu_data *pdu_data;
     uint32_t timestamp;
 
-    timestamp = k_cycle_get_32();
+    timestamp = srcc_timing_capture_ms();
 
     pdu_data = radio_pkt_get();
 
@@ -96,11 +98,12 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
     scan_rx_count++;
     //return;
 
-    timestamp = k_cycle_get_32();
+    timestamp = srcc_timing_capture_ms();
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
 
+    /* Select only SCAN packets */
     switch (pdu_adv->type) {
         case 0b0000:    /* ADV_IND */
         case 0b0001:    /* ADV_DIRECT_IND */
@@ -155,4 +158,109 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     /* Callbacks */
     srcc_notify_scan_rx(item);
+}
+
+
+void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
+{
+    struct srcc_adv_item *item;
+    struct pdu_adv *pdu_adv;
+    uint32_t timestamp;
+
+    timestamp = srcc_timing_capture_ms();
+
+    /* Check if it is one of the type we monitor */
+    pdu_adv = radio_pkt_get();
+
+    //printk("ADV RX: 0x%x\n", pdu_adv->type);
+
+    /* Note: We do not consider secondary advertising physical channel here. */
+    switch (pdu_adv->type) {
+        case 0b0101:    /* CONNECT_IND */
+            /* continue */
+            break;
+
+        default:
+            /* */
+            return;
+    }
+
+    item = srcc_malloc_adv_item();
+    if (item == NULL) {
+        printk("Failed to allocate memory from the heap for adv rx item :(\n");
+        return;
+    }
+
+    item->metric.timestamp = timestamp;
+    item->metric.rssi = radio_rssi_get();
+    item->metric.crc_is_valid = crc_ok;
+    item->metric.type = pdu_adv->type;
+    item->metric.len = pdu_adv->len;
+
+    switch (pdu_adv->type) {
+        case 0b0101:    /* CONNECT_IND */
+            memcpy(&item->metric.connect_ind, &pdu_adv->connect_ind,
+                   sizeof(struct pdu_adv_connect_ind));
+        default:
+            break;
+    }
+
+    /* Callbacks */
+    srcc_notify_adv_rx(item);
+}
+
+void lll_srcc_adv_tx(struct lll_adv *lll)
+{
+    struct srcc_adv_item *item;
+    struct pdu_adv *pdu_adv;
+    uint32_t timestamp;
+
+    timestamp = srcc_timing_capture_ms();
+
+    /* ADV_IND are sent too quickly for the FIFO to drain. */
+    return;
+
+    ///* Check if it is one of the type we monitor */
+    //pdu_adv = radio_pkt_get();
+
+    ///* Note: We do not consider secondary advertising physical channel here. */
+    //switch (pdu_adv->type) {
+    //    case 0b0000:    /* ADV_IND */
+    //    case 0b0001:    /* ADV_DIRECT_IND */
+    //        /* continue */
+    //        break;
+
+    //    default:
+    //        /* */
+    //        return;
+    //}
+
+    //item = srcc_malloc_adv_item();
+    //if (item == NULL) {
+    //    printk("Failed to allocate memory from the heap for adv tx item :(\n");
+    //    return;
+    //}
+
+    //item->metric.timestamp = timestamp;
+    //item->metric.rssi = radio_rssi_get();
+    //item->metric.crc_is_valid = 0;
+    //item->metric.type = pdu_adv->type;
+    //item->metric.len = pdu_adv->len;
+
+    //switch (pdu_adv->type) {
+    //    case 0b0000:    /* ADV_IND */
+    //        memcpy(&item->metric.adv_ind, &pdu_adv->adv_ind,
+    //               sizeof(struct pdu_adv_adv_ind));
+    //        break;
+    //    case 0b0001:    /* ADV_DIRECT_IND */
+    //        memcpy(&item->metric.direct_ind, &pdu_adv->direct_ind,
+    //               sizeof(struct pdu_adv_adv_ind));
+    //        break;
+
+    //    default:
+    //        break;
+    //}
+
+    ///* Callbacks */
+    //srcc_notify_adv_tx(item);
 }

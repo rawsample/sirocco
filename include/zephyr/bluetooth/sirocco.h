@@ -264,6 +264,9 @@ struct __aligned(4) srcc_conn_metric {
     /* Meta data */
     uint32_t timestamp;             /* in ms */
     uint16_t rssi;
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+    uint8_t packet_lost_counter;
+#endif
 
     /* Packet */
     uint16_t crc_is_valid;
@@ -363,10 +366,10 @@ enum alert_num {
 void srcc_alert(enum alert_num nb, const char *fmt, ...);
 
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
-void srcc_detect_btlejack(struct srcc_metric *metric);
+void srcc_detect_btlejack(struct srcc_conn_metric *conn_metric);
 #endif
 #if defined(CONFIG_BT_SRCC_BTLEJUICE)
-void srcc_detect_btlejuice(struct srcc_scan_metric *metric);
+void srcc_detect_btlejuice(struct srcc_scan_metric *scan_metric);
 #endif
 #if defined(CONFIG_BT_SRCC_GATTACKER)
 void srcc_detect_gattacker(struct srcc_metric *metric);

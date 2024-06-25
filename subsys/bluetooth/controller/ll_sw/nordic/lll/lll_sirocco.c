@@ -55,6 +55,9 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = crc_ok;
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+    item->metric.packet_lost_counter = 0;
+#endif
     memcpy(&item->metric.access_addr, &lll->access_addr, 4*sizeof(uint8_t));
     item->metric.len = pdu_data->len;
 
@@ -81,6 +84,9 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = 0xFF;
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+    item->metric.packet_lost_counter++;
+#endif
     memcpy(&item->metric.access_addr, &lll->access_addr, 4*sizeof(uint8_t));
     item->metric.len = pdu_data->len;
 
@@ -211,56 +217,58 @@ void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
 
 void lll_srcc_adv_tx(struct lll_adv *lll)
 {
+    /* ADV_IND are sent too quickly for the FIFO to drain. */
+    return;
+
+    /* Dead code: */
     struct srcc_adv_item *item;
     struct pdu_adv *pdu_adv;
     uint32_t timestamp;
 
     timestamp = srcc_timing_capture_ms();
 
-    /* ADV_IND are sent too quickly for the FIFO to drain. */
-    return;
 
-    ///* Check if it is one of the type we monitor */
-    //pdu_adv = radio_pkt_get();
+    /* Check if it is one of the type we monitor */
+    pdu_adv = radio_pkt_get();
 
-    ///* Note: We do not consider secondary advertising physical channel here. */
-    //switch (pdu_adv->type) {
-    //    case 0b0000:    /* ADV_IND */
-    //    case 0b0001:    /* ADV_DIRECT_IND */
-    //        /* continue */
-    //        break;
+    /* Note: We do not consider secondary advertising physical channel here. */
+    switch (pdu_adv->type) {
+        case 0b0000:    /* ADV_IND */
+        case 0b0001:    /* ADV_DIRECT_IND */
+            /* continue */
+            break;
 
-    //    default:
-    //        /* */
-    //        return;
-    //}
+        default:
+            /* */
+            return;
+    }
 
-    //item = srcc_malloc_adv_item();
-    //if (item == NULL) {
-    //    printk("Failed to allocate memory from the heap for adv tx item :(\n");
-    //    return;
-    //}
+    item = srcc_malloc_adv_item();
+    if (item == NULL) {
+        printk("Failed to allocate memory from the heap for adv tx item :(\n");
+        return;
+    }
 
-    //item->metric.timestamp = timestamp;
-    //item->metric.rssi = radio_rssi_get();
-    //item->metric.crc_is_valid = 0;
-    //item->metric.type = pdu_adv->type;
-    //item->metric.len = pdu_adv->len;
+    item->metric.timestamp = timestamp;
+    item->metric.rssi = radio_rssi_get();
+    item->metric.crc_is_valid = 0;
+    item->metric.type = pdu_adv->type;
+    item->metric.len = pdu_adv->len;
 
-    //switch (pdu_adv->type) {
-    //    case 0b0000:    /* ADV_IND */
-    //        memcpy(&item->metric.adv_ind, &pdu_adv->adv_ind,
-    //               sizeof(struct pdu_adv_adv_ind));
-    //        break;
-    //    case 0b0001:    /* ADV_DIRECT_IND */
-    //        memcpy(&item->metric.direct_ind, &pdu_adv->direct_ind,
-    //               sizeof(struct pdu_adv_adv_ind));
-    //        break;
+    switch (pdu_adv->type) {
+        case 0b0000:    /* ADV_IND */
+            memcpy(&item->metric.adv_ind, &pdu_adv->adv_ind,
+                   sizeof(struct pdu_adv_adv_ind));
+            break;
+        case 0b0001:    /* ADV_DIRECT_IND */
+            memcpy(&item->metric.direct_ind, &pdu_adv->direct_ind,
+                   sizeof(struct pdu_adv_adv_ind));
+            break;
 
-    //    default:
-    //        break;
-    //}
+        default:
+            break;
+    }
 
-    ///* Callbacks */
-    //srcc_notify_adv_tx(item);
+    /* Callbacks */
+    srcc_notify_adv_tx(item);
 }

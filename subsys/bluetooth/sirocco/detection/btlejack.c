@@ -46,8 +46,10 @@ void srcc_detect_btlejack(struct srcc_conn_metric *conn_metric)
     memcpy(&access_addr, conn_metric->access_addr, sizeof(uint32_t));
 
     ret = sys_hashmap_get(&btlejack_hmap, access_addr, &value);
-    if (!ret) {
+    if (ret) {
+        data = (struct btlejack_data *)((uint32_t)value);
 
+    } else {
         /* Initialize new counter */
         data = k_malloc(sizeof(struct btlejack_data));
         if (data == NULL) {
@@ -62,7 +64,6 @@ void srcc_detect_btlejack(struct srcc_conn_metric *conn_metric)
             return;
         }
     }
-    data = (struct btlejack_data *)((uint32_t)value);
 
     do_detection(data, conn_metric);
 }

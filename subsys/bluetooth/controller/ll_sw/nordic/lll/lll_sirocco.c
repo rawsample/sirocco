@@ -60,6 +60,18 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
 #endif
     memcpy(&item->metric.access_addr, &lll->access_addr, 4*sizeof(uint8_t));
     item->metric.len = pdu_data->len;
+    item->metric.ll_id = pdu_data->ll_id;
+
+#if defined(CONFIG_BT_SRCC_KNOB)
+    item->metric.payload = k_malloc(pdu_data->len);
+    if (item != NULL) {
+        memcpy(item->metric.payload, pdu_data->lldata, pdu_data->len);
+    } else {
+        printk("Failed to allocate memory for pdu_data\n");
+    }
+#else
+    item->metric.payload = NULL;
+#endif
 
     /* Callbacks */
     srcc_notify_conn_rx(item);
@@ -89,6 +101,8 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
 #endif
     memcpy(&item->metric.access_addr, &lll->access_addr, 4*sizeof(uint8_t));
     item->metric.len = pdu_data->len;
+    item->metric.ll_id = pdu_data->ll_id;
+    item->metric.payload = NULL;
 
     /* Callbacks */
     srcc_notify_conn_tx(item);

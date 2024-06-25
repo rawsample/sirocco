@@ -29,7 +29,6 @@ static void do_detection(struct btlejack_data *data, struct srcc_conn_metric *co
                    conn_metric->access_addr[1], conn_metric->access_addr[0]);
     }
 
-
     if (conn_metric->crc_is_valid || conn_metric->packet_lost_counter == 0) {
         data->invalid_counter = 0;
     }
@@ -63,7 +62,6 @@ void srcc_detect_btlejack(struct srcc_conn_metric *conn_metric)
             return;
         }
     }
-
     data = (struct btlejack_data *)((uint32_t)value);
 
     do_detection(data, conn_metric);

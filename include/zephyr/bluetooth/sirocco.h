@@ -271,7 +271,7 @@ struct __aligned(4) srcc_conn_metric {
     /* Packet */
     uint16_t crc_is_valid;
     /* Header */
-    //uint8_t ll_id:2;
+    uint8_t ll_id:2;
     //uint8_t nesn:1;
     //uint8_t sn:1;
     //uint8_t md:1;
@@ -280,6 +280,7 @@ struct __aligned(4) srcc_conn_metric {
 
     /* Payload */
     //uint8_t payload[]
+    uint8_t *payload;
 } __packed;
 
 struct __aligned(4) srcc_conn_item {
@@ -382,7 +383,7 @@ void srcc_detect_injectable(struct srcc_metric *metric);
 void srcc_detect_jamming(struct srcc_metric *metric);
 #endif
 #if defined(CONFIG_BT_SRCC_KNOB)
-void srcc_detect_knob(struct srcc_metric *metric);
+void srcc_detect_knob(struct srcc_conn_metric *conn_metric);
 #endif
 
 #endif

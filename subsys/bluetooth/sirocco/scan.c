@@ -209,7 +209,7 @@ static void remove_timeout_callback(uint64_t key, uint64_t value, void *cookie)
         return;
     }
 
-    if (scan_data->previous_metric.timestamp < timeout->threshold) {
+    if (scan_data->previous_timestamp < timeout->threshold) {
         timeout->keys[timeout->len] = key;
         timeout->len++;
     }
@@ -330,7 +330,7 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
 
     /* Clean up routines */
     /* Save previous metric */
-    memcpy(&scan_data->previous_metric, scan_metric,
+    memcpy(&scan_data->previous_timestamp, scan_metric->timestamp,
            sizeof(struct srcc_scan_metric));
     remove_timeout_entries();
     //printk("Hashmap size: %u\n", sys_hashmap_size(&scan_hmap));

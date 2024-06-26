@@ -23,6 +23,8 @@ SYS_HASHMAP_SC_DEFINE_STATIC_ADVANCED(scan_hmap,
                                       SYS_HASHMAP_CONFIG(SCAN_MAX_ENTRY, SYS_HASHMAP_DEFAULT_LOAD_FACTOR)
 );
 
+static uint32_t debug_scan_data_counter = 0;
+
 
 /* Printk functions */
 #define BUFFER_SIZE 512
@@ -169,9 +171,11 @@ static struct scan_data *malloc_scan_data(void)
 
     scan_data = k_calloc(1, sizeof(struct scan_data));
     if (scan_data == NULL) {
-        printk("Failed to allocate memory for scan_data :(\n");
+        printk("Failed to allocate memory for scan_data :( count = %d\n",
+                debug_scan_data_counter);
         return NULL;
     }
+    debug_scan_data_counter++;
 
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
     init_oasis_gattacker_data(&scan_data->oasis_gattacker_data);
@@ -187,6 +191,7 @@ static void free_scan_data(struct scan_data *scan_data)
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     k_free(scan_data);
+    debug_scan_data_counter--;
 }
 
 
@@ -205,7 +210,7 @@ static void remove_timeout_callback(uint64_t key, uint64_t value, void *cookie)
     //printk("(%#llx -> %#llx) ", key, value);
 
     /* Let's not delete more than 5 entries at a time */
-    if (timeout->len > 5) {
+    if (timeout->len > 10) {
         return;
     }
 
@@ -329,9 +334,7 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
 
 
     /* Clean up routines */
-    /* Save previous metric */
-    memcpy(&scan_data->previous_timestamp, scan_metric->timestamp,
-           sizeof(struct srcc_scan_metric));
+    scan_data->previous_timestamp = scan_metric->timestamp;
     remove_timeout_entries();
     //printk("Hashmap size: %u\n", sys_hashmap_size(&scan_hmap));
 }

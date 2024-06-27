@@ -2,13 +2,15 @@
  * The Sirocco Bluetooth Intrusion Detection System (IDS).
  */
 
-#include <zephyr/sys/printk.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/bluetooth.h>
 
 #include <zephyr/bluetooth/sirocco.h>
 
 
 
+//LOG_MODULE_REGISTER(sirocco);
+LOG_MODULE_REGISTER(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 K_FIFO_DEFINE(conn_rx_fifo);
 K_FIFO_DEFINE(conn_tx_fifo);
@@ -128,12 +130,9 @@ static void sirocco_main_loop(void *, void *, void *)
     struct srcc_conn_item *conn_item;
     struct srcc_adv_item *adv_item;
 
-    printk("[SIROCCO] sizeof(scan_metric) = %d bytes\n"
-           "[SIROCCO] sizeof(conn_metric) = %d bytes\n"
-           "[SIROCCO] sizeof(adv_metric) = %d bytes\n",
-           sizeof(struct srcc_scan_metric),
-           sizeof(struct srcc_conn_metric),
-           sizeof(struct srcc_adv_metric));
+    LOG_DBG("sizeof(conn_metric) = %d bytes", sizeof(struct srcc_conn_metric));
+    LOG_DBG("sizeof(scan_metric) = %d bytes", sizeof(struct srcc_scan_metric));
+    LOG_DBG("sizeof(adv_metric) = %d bytes", sizeof(struct srcc_adv_metric));
 
 	while(1) {
 		//printk("[SIROCCO] main loop\n");
@@ -146,6 +145,11 @@ static void sirocco_main_loop(void *, void *, void *)
         if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             conn_item = k_fifo_get(&conn_rx_fifo, K_FOREVER);
             run_conn_rx_detection(&conn_item->metric);
+#if defined(CONFIG_BT_SRCC_KNOB)
+            if (conn_item->metric.payload != NULL) {
+                k_free(conn_item->metric.payload);
+            }
+#endif
             srcc_free_conn_item(conn_item);
 
         } else if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
@@ -153,10 +157,12 @@ static void sirocco_main_loop(void *, void *, void *)
             run_conn_tx_detection(&conn_item->metric);
             srcc_free_conn_item(conn_item);
 
+
         } else if (events[2].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             scan_item = k_fifo_get(&scan_rx_fifo, K_FOREVER);
             run_scan_rx_detection(&scan_item->metric);
             srcc_free_scan_item(scan_item);
+
 
         } else if (events[3].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             adv_item = k_fifo_get(&adv_rx_fifo, K_FOREVER);
@@ -306,7 +312,7 @@ void srcc_init(void)
     srcc_timing_init();
     srcc_timing_start();
 
-    printk("Sirocco initialized\n");
+    LOG_DBG("Sirocco initialized");
     return;    
 }
 

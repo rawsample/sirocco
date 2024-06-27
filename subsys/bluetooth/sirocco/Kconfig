@@ -7,6 +7,18 @@ menuconfig BT_SIROCCO
 	help
 	  This option enables the Sirocco Bluetooth intrusion detection system.
 
+    config BT_SRCC_LOG_LEVEL
+    int "Sirocco Logging Level"
+    default 3
+    depends on LOG && BT_SIROCCO
+    help
+      This sets the logging level for the Sirocco module.
+      0 - No log
+      1 - Error
+      2 - Warning
+      3 - Info
+      4 - Debug
+
 if BT_SIROCCO
 
 rsource "detection/Kconfig"

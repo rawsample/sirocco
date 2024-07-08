@@ -33,15 +33,3 @@ struct scan_data {
     //struct srcc_scan_metric previous_adv_metric;
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 };
-
-
-
-#if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *data, struct srcc_scan_metric *metric);
-void init_oasis_gattacker_data(struct oasis_gattacker_data *data);
-void clean_oasis_gattacker_data(struct oasis_gattacker_data *data);
-#endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
-
-#if defined(CONFIG_BT_SRCC_BTLEJUICE) && defined(CONFIG_BT_PERIPHERAL)
-void srcc_detect_btlejuice(struct srcc_scan_metric *scan_metric);
-#endif  /* CONFIG_BT_SRCC_BTLEJUICE */

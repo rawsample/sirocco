@@ -4,7 +4,7 @@
 #include<zephyr/bluetooth/sirocco.h>
 
 
-void srcc_detect_injectable(struct srcc_metric *metric)
+void srcc_detect_injectable(struct srcc_conn_metric *conn_metric)
 {
     printk("[SIROCCO] InjectaBLE module\n");
 

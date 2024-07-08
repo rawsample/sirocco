@@ -16,6 +16,7 @@ struct adv_intervals {
 
 struct oasis_gattacker_data {
     struct adv_intervals adv_intervals;
+    uint32_t previous_adv_timestamp;
     uint32_t threshold;
     uint8_t last_channel;
     uint8_t suspicious;
@@ -28,9 +29,8 @@ struct scan_data {
     uint64_t counter;
     uint32_t previous_timestamp;
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    struct oasis_gattacker_data oasis_gattacker_data;
+    struct oasis_gattacker_data channel[3];
     //struct srcc_scan_metric previous_adv_metric;
-    uint32_t previous_adv_timestamp;
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 };
 

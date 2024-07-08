@@ -178,7 +178,9 @@ static struct scan_data *malloc_scan_data(void)
     debug_scan_data_counter++;
 
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    init_oasis_gattacker_data(&scan_data->oasis_gattacker_data);
+    for (int i=0; i<3; i++) {
+        init_oasis_gattacker_data(&scan_data->channel[i]);
+    }
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     return scan_data;
@@ -187,7 +189,9 @@ static struct scan_data *malloc_scan_data(void)
 static void free_scan_data(struct scan_data *scan_data)
 {
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    clean_oasis_gattacker_data(&scan_data->oasis_gattacker_data);
+    for (int i=0; i<3; i++) {
+        clean_oasis_gattacker_data(&scan_data->channel[i]);
+    }
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     k_free(scan_data);

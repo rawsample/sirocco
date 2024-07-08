@@ -64,7 +64,7 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
 
 #if defined(CONFIG_BT_SRCC_KNOB)
     item->metric.payload = k_malloc(pdu_data->len);
-    if (item != NULL) {
+    if (item->metric.payload != NULL) {
         memcpy(item->metric.payload, pdu_data->lldata, pdu_data->len);
     } else {
         printk("Failed to allocate memory for pdu_data\n");

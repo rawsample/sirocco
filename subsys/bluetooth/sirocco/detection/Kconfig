@@ -2,7 +2,7 @@
 
 config BT_SRCC_BTLEJACK
     bool "Sirocco BTLEJack module"
-    depends on BT_SIROCCO
+    depends on BT_SIROCCO && BT_CENTRAL
     help
         Enable BTLEJack detection module
 
@@ -26,7 +26,7 @@ config BT_SRCC_GATTACKER
 
 config BT_SRCC_INJECTABLE
     bool "Sirocco InjectaBLE module"
-    depends on BT_SIROCCO
+    depends on BT_SIROCCO && BT_PERIPHERAL
     help
         Enable InjectaBLE detection module
 
@@ -38,18 +38,6 @@ config BT_SRCC_JAMMING
 
 config BT_SRCC_KNOB
     bool "Sirocco KNOB module"
-    depends on BT_SIROCCO
+    depends on BT_SIROCCO && (BT_CENTRAL || BT_PERIPHERAL)
     help
         Enable KNOB detection module
-
-config BT_SRCC_ALL
-    bool "All detection modules"
-    select BT_SRCC_BTLEJACK
-    select BT_SRCC_BTLEJUICE
-    select BT_SRCC_GATTACKER
-    select BT_SRCC_OASIS_GATTACKER
-    select BT_SRCC_INJECTABLE
-    select BT_SRCC_JAMMING
-    select BT_SRCC_KNOB
-    help
-      Enable all detection modules

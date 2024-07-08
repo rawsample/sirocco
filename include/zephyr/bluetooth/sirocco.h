@@ -260,6 +260,9 @@ struct __aligned(4) srcc_conn_metric {
 
     /* Local device (lll_conn) */
     uint8_t access_addr[4];
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+    uint16_t interval;
+#endif
 
     /* Meta data */
     uint32_t timestamp;             /* in ms */

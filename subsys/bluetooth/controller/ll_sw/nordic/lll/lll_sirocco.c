@@ -55,6 +55,9 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = crc_ok;
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+    item->metric.interval = lll->interval;
+#endif
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
     item->metric.packet_lost_counter = 0;
 #endif
@@ -96,6 +99,9 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     item->metric.timestamp = timestamp;
     item->metric.rssi = radio_rssi_get();
     item->metric.crc_is_valid = 0xFF;
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+    item->metric.interval = lll->interval;
+#endif
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
     item->metric.packet_lost_counter++;
 #endif

@@ -64,7 +64,25 @@ uint32_t srcc_timing_capture_cycles(void)
     return nrfx_timer_capture(&timer, NRF_TIMER_CC_CHANNEL2);
 }
 
+
+/* Note: the overflow is rounded from (2<<32) / 16MHz * 1000 in ms
+   This means it should shift of ~0.456 ms every overflow,
+   so ~ 146 ms every day.
+ */
+#define OVERFLOW_MS 268435    // 
+static uint32_t overflow_counter = 0;
+static uint32_t previous_tsp = 0;
+
+/* Note: the timestamp should overflow every ~49,7 days. */
 uint32_t srcc_timing_capture_ms(void)
 {
-    return srcc_timing_cycles_to_ms(srcc_timing_capture_cycles());
+    uint32_t tsp = srcc_timing_cycles_to_ms(srcc_timing_capture_cycles());
+
+    if (tsp < previous_tsp) {
+        overflow_counter++;
+    }
+
+    previous_tsp = tsp;
+
+    return tsp + overflow_counter * OVERFLOW_MS;
 }

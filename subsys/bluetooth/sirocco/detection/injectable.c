@@ -51,7 +51,7 @@ void srcc_detect_injectable(struct srcc_conn_metric *conn_metric)
         }
     }
 
-    conn_interval = conn_metric->timestamp - data->previous_conn_timestamp;
+    conn_interval = abs(conn_metric->timestamp - data->previous_conn_timestamp);
     interval_ms = conn_metric->interval * 1.25;
     LOG_DBG("(TSP) %d - (PREV TST) %d = %d.%06d <? (lll_interval) %d.%06d",
             conn_metric->timestamp, data->previous_conn_timestamp,

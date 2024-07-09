@@ -11,7 +11,6 @@
 
 #define SRCC_NRF2_TIMER 2
 
-
 static const nrfx_timer_t timer = NRFX_TIMER_INSTANCE(SRCC_NRF2_TIMER);
 
 
@@ -29,11 +28,7 @@ int srcc_timing_init(void)
     };
 
     err = nrfx_timer_init(&timer, &config, NULL);
-    if (err != NRFX_SUCCESS) {
-        printk("[SIROCCO] Error initializing timer: %s\n",
-               nrfx_error_string_get(err));
-        return -1;
-    }
+    NRFX_ASSERT(err == NRFX_SUCCESS);
 
 	//nrfx_timer_disable(&timer);
     nrfx_timer_clear(&timer);

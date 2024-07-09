@@ -1255,7 +1255,7 @@ static void isr_rx(void *param)
 	uint8_t trx_done;
 	uint8_t crc_ok;
 #if defined(CONFIG_BT_SIROCCO)
-	uint32_t rssi_value;
+	uint32_t rssi_value = 0;
 #endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {

@@ -681,7 +681,7 @@ static void isr_rx(void *param)
 	bool has_adva;
 	int err = 0U;
 #if defined(CONFIG_BT_SIROCCO)
-	uint32_t rssi_value;
+	uint32_t rssi_value = 0;
 #endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {

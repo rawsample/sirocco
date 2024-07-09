@@ -16,7 +16,7 @@ LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 #define MAX_ADV_DELAY 300    /* in ms */
 //#define MAX_ADV_DELAY_CYCLES (MAX_ADV_DELAY * CYCLES_PER_SEC)
 
-static uint8_t periph_addr[BDADDR_SIZE] = {0xaa, 0xaa, 0xef, 0xbe, 0xad, 0xde};
+//static uint8_t periph_addr[BDADDR_SIZE] = {0xaa, 0xaa, 0xef, 0xbe, 0xad, 0xde};
 
 
 void init_oasis_gattacker_data(struct oasis_gattacker_data *data)

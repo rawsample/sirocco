@@ -215,7 +215,7 @@ void lll_conn_isr_rx(void *param)
 	bool cte_ready;
 #endif /* CONFIG_BT_CTLR_DF_CONN_CTE_RX */
 #if defined(CONFIG_BT_SIROCCO)
-	uint32_t rssi_value;
+	uint32_t rssi_value = 0;
 #endif /* CONFIG_BT_SIROCCO */
 
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {

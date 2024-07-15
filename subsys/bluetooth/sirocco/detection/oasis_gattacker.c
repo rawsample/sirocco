@@ -16,7 +16,7 @@ LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 #define MAX_ADV_DELAY 300    /* in ms */
 //#define MAX_ADV_DELAY_CYCLES (MAX_ADV_DELAY * CYCLES_PER_SEC)
 
-//static uint8_t periph_addr[BDADDR_SIZE] = {0xaa, 0xaa, 0xef, 0xbe, 0xad, 0xde};
+static uint8_t periph_addr[BDADDR_SIZE] = {0xaa, 0xaa, 0xef, 0xbe, 0xad, 0xde};
 
 
 void init_oasis_gattacker_data(struct oasis_gattacker_data *data)
@@ -64,7 +64,7 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
     ret = ring_buf_peek(&gattacker_data->adv_intervals.rb,
                         (uint8_t *)buf, RBUFF_SIZE);
     if (ret != RBUFF_SIZE) {
-        printk("Failed to peek the ring buffer\n");
+        LOG_ERR("Failed to peek the ring buffer\n");
         return -1;
     }
 
@@ -74,9 +74,19 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
             min_interval = buf[i];
         }
     }
-    LOG_DBG("min_interval = %u ms", min_interval);
 
     /* Print buffer content */
+    if ( metric->adv_ind.addr[0] == periph_addr[0]
+        && metric->adv_ind.addr[1] == periph_addr[1]
+        && metric->adv_ind.addr[2] == periph_addr[2]
+        && metric->adv_ind.addr[3] == periph_addr[3]
+        && metric->adv_ind.addr[4] == periph_addr[4]
+        && metric->adv_ind.addr[5] == periph_addr[5]
+        ) {
+
+    LOG_DBG("min_interval = %u ms", min_interval);
+
+
 #if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
     for (int i=0; i < (RBUFF_SIZE/sizeof(uint32_t)); i++) {
         //pbuf_ptr += sprintf(pbuf_ptr, "%u ", buf[i]);
@@ -86,6 +96,7 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
     *pbuf_ptr = '\0';
 #endif /* CONFIG_BT_SRCC_LOG_LEVEL >= 4 */
     LOG_DBG("buf: %s", print_buf);
+    }
 
     /* Compute the detection threshold */
     if (gattacker_data->threshold == 0
@@ -99,6 +110,13 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
             data->oasis_gattacker_data.threshold = MAX_ADV_DELAY_CYCLES;
         }
         */
+        if ( metric->adv_ind.addr[0] == periph_addr[0]
+            && metric->adv_ind.addr[1] == periph_addr[1]
+            && metric->adv_ind.addr[2] == periph_addr[2]
+            && metric->adv_ind.addr[3] == periph_addr[3]
+            && metric->adv_ind.addr[4] == periph_addr[4]
+            && metric->adv_ind.addr[5] == periph_addr[5]
+            ) {
         LOG_DBG("%02X:%02X:%02X:%02X:%02X:%02X - set threshold to %u ms",
             metric->adv_ind.addr[5],
             metric->adv_ind.addr[4],
@@ -107,6 +125,7 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
             metric->adv_ind.addr[1],
             metric->adv_ind.addr[0],
             gattacker_data->threshold);
+        }
     }
 
     return 1;
@@ -115,17 +134,18 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
 static void do_detection(uint64_t address, struct oasis_gattacker_data *gattacker_data,
                          struct srcc_scan_metric *metric, uint32_t adv_interval)
 {
-  if (adv_interval < gattacker_data->threshold) {
-      gattacker_data->suspicious++;
+    if (adv_interval < gattacker_data->threshold) {
+        gattacker_data->suspicious++;
 
-      if (gattacker_data->suspicious > OASIS_GATTACKER_SUSPICIOUS_THRESHOLD) {
-          srcc_alert(GATTACKER, "Suspicious activity detected from %x", address);
-      }
+        if (gattacker_data->suspicious > OASIS_GATTACKER_SUSPICIOUS_THRESHOLD) {
+            /* Quickly convert the address into the right format. */
+            srcc_alert(GATTACKER, srcc_timing_capture_ms(), (uint8_t *)&address + 2);
+        }
 
-  /* Reset the suspicious activity counter */
-  } else if (gattacker_data->suspicious) {
-      gattacker_data->suspicious = 0;
-  }
+    /* Reset the suspicious activity counter */
+    } else if (gattacker_data->suspicious) {
+        gattacker_data->suspicious = 0;
+    }
 }
 
 
@@ -153,11 +173,16 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *scan_data,
     }
     */
 
-    //adv_interval = srcc_timing_capture_ms();
-    //printk("current timestamp %u ms\n", adv_interval);
-
     /* Calculare the interval between two ADV_IND in cycles */
     adv_interval = metric->timestamp - gattacker_data->previous_adv_timestamp;
+
+    if ( metric->adv_ind.addr[0] == periph_addr[0]
+        && metric->adv_ind.addr[1] == periph_addr[1]
+        && metric->adv_ind.addr[2] == periph_addr[2]
+        && metric->adv_ind.addr[3] == periph_addr[3]
+        && metric->adv_ind.addr[4] == periph_addr[4]
+        && metric->adv_ind.addr[5] == periph_addr[5]
+        ) {
     LOG_DBG("chan %d - adv_interval %u - timestamp %u - previous %u",
             metric->channel, adv_interval, metric->timestamp, gattacker_data->previous_adv_timestamp);
     LOG_DBG("%02X:%02X:%02X:%02X:%02X:%02X - chan %d - %u ms",
@@ -169,6 +194,7 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *scan_data,
            metric->adv_ind.addr[0],
            metric->channel,
            adv_interval);
+    }
 
     /* Estimate the threshold */
     if (estimate_threshold(gattacker_data, metric, adv_interval) >= 0) {

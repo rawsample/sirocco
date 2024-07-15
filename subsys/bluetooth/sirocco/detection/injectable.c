@@ -60,9 +60,7 @@ void srcc_detect_injectable(struct srcc_conn_metric *conn_metric)
 
     /* The threshold is the one set during the connection negotiation. */
     if (conn_interval < conn_metric->interval) {
-        srcc_alert(INJECTABLE, "%02X:%02X:%02X:%02X",
-                   conn_metric->access_addr[3], conn_metric->access_addr[2],
-                   conn_metric->access_addr[1], conn_metric->access_addr[0]);
+        srcc_alert(INJECTABLE, srcc_timing_capture_ms(), conn_metric->access_addr);
     }
 
     data->previous_conn_timestamp = conn_metric->timestamp;

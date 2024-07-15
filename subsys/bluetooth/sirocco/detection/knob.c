@@ -17,9 +17,7 @@ void srcc_detect_knob(struct srcc_conn_metric *conn_metric)
                 conn_metric->payload[4] == 0x01 && // is a pairing request
                 conn_metric->payload[8] <= 10
                ) {
-                srcc_alert(KNOB, "%02X:%02X:%02X:%02X",
-                        conn_metric->access_addr[3], conn_metric->access_addr[2],
-                        conn_metric->access_addr[1], conn_metric->access_addr[0]);
+                srcc_alert(KNOB, srcc_timing_capture_ms(), conn_metric->access_addr);
             }
         }
     }

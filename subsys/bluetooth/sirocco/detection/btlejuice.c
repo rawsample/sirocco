@@ -30,9 +30,7 @@ static void srcc_btlejuice_cb(const bt_addr_le_t *remote_addr, int8_t rssi,
         res = memcmp(&local_addrs[i].a.val, &remote_addr->a.val, BDADDR_SIZE*sizeof(uint8_t));
         if (res == 0) {
             printk(">>> [SIROCCO] BTLEJuice attack detected !!!\n");
-            srcc_alert(BTLEJUICE, "%02X:%02X:%02X:%02X:%02X:%02X",
-                       remote_addr->a.val[5], remote_addr->a.val[4], remote_addr->a.val[3],
-                       remote_addr->a.val[2], remote_addr->a.val[1], remote_addr->a.val[0]);
+            srcc_alert(BTLEJUICE, srcc_timing_capture_ms(), (uint8_t *) remote_addr->a.val);
         }
     }
 }

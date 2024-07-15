@@ -270,11 +270,11 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
 
     switch (scan_metric->type) {
         case 0b0000:    /* ADV_IND */
-            memcpy(&addr, &(scan_metric->adv_ind.addr), BDADDR_SIZE*sizeof(uint8_t));
+            memcpy((uint8_t *)&addr + 2, &(scan_metric->adv_ind.addr), BDADDR_SIZE*sizeof(uint8_t));
             break;
 
         case 0b0100:    /* SCAN_RESP */
-            memcpy(&addr, &(scan_metric->scan_rsp.addr), BDADDR_SIZE*sizeof(uint8_t));
+            memcpy((uint8_t *)&addr + 2, &(scan_metric->scan_rsp.addr), BDADDR_SIZE*sizeof(uint8_t));
             break;
 
         default:

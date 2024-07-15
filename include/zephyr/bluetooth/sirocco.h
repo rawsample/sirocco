@@ -367,7 +367,7 @@ enum alert_num {
   KNOB        = 0x6,
 };
 
-void srcc_alert(enum alert_num nb, const char *fmt, ...);
+void srcc_alert(enum alert_num nb, uint32_t timestamp, uint8_t addr[]);
 
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
 void srcc_detect_btlejack(struct srcc_conn_metric *conn_metric);

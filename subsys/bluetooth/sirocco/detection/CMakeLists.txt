@@ -1,4 +1,3 @@
-zephyr_sources(common.c)
 zephyr_sources_ifdef(CONFIG_BT_SRCC_BTLEJACK btlejack.c)
 zephyr_sources_ifdef(CONFIG_BT_SRCC_BTLEJUICE btlejuice.c)
 zephyr_sources_ifdef(CONFIG_BT_SRCC_OASIS_GATTACKER oasis_gattacker.c)

@@ -2,10 +2,13 @@
  */
 #include <zephyr/kernel.h>
 #include <zephyr/sys/hash_map.h>
+#include <zephyr/logging/log.h>
 
 #include<zephyr/bluetooth/sirocco.h>
 
 
+
+LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 /* Number of wrong packets before raising an alert */
 #define BTLEJACK_THRESHOLD 3
@@ -22,11 +25,14 @@ static void do_detection(struct btlejack_data *data, struct srcc_conn_metric *co
     if (!conn_metric->crc_is_valid || conn_metric->packet_lost_counter > 0) {
         data->invalid_counter++;
     }
+    
+    LOG_DBG("%02X:%02X:%02X:%02X -- invalid_counter = %d",
+            conn_metric->access_addr[3], conn_metric->access_addr[2],
+            conn_metric->access_addr[1], conn_metric->access_addr[0],
+            data->invalid_counter);
 
     if (data->invalid_counter > BTLEJACK_THRESHOLD) {
-        srcc_alert(BTLEJACK, "%02X:%02X:%02X:%02X",
-                   conn_metric->access_addr[3], conn_metric->access_addr[2],
-                   conn_metric->access_addr[1], conn_metric->access_addr[0]);
+        srcc_alert(BTLEJACK, srcc_timing_capture_ms(), conn_metric->access_addr);
     }
 
     if (conn_metric->crc_is_valid || conn_metric->packet_lost_counter == 0) {

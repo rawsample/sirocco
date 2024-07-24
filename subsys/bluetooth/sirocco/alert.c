@@ -22,7 +22,7 @@ K_MSGQ_DEFINE(alert_msgq, sizeof(struct alert_t), 32, 1);
 
 
 /* Thread aggregating alerts
- ****************************************************************************/
+ *****************************************************************************/
 
 #define SRCC_ALERT_THREAD_STACK_SIZE 1024
 #define SRCC_ALERT_THREAD_PRIORITY 5
@@ -34,11 +34,17 @@ static void log_alert(struct alert_t *alert);
 static void sirocco_alert_loop(void *, void *, void *)
 {
     struct alert_t alert;
+    int ret;
 
     while (1) {
-        k_msgq_peek(&alert_msgq, &alert);
+        ret = k_msgq_get(&alert_msgq, &alert, K_FOREVER);
+        if (ret == 0) {
+            /* For now log the message, later send it via HCI */
+            log_alert(&alert);
 
-        log_alert(&alert);
+        } else if (ret == -ENOMSG) {
+            // do nothing
+        }
     }
 }
 
@@ -75,16 +81,20 @@ static void log_alert(struct alert_t *alert)
         case BTLEJACK:
         case INJECTABLE:
         case KNOB:
-            snprintf(buffer, sizeof(buffer) - strlen(buffer), " -- %02X:%02X:%02X:%02X",
-                     alert->access_addr[3], alert->access_addr[2], alert->access_addr[1], alert->access_addr[0]);
+            snprintf(buffer, sizeof(buffer) - strlen(buffer),
+                     " -- %02X:%02X:%02X:%02X",
+                     alert->access_addr[3], alert->access_addr[2],
+                     alert->access_addr[1], alert->access_addr[0]);
             break;
 
         /* advertisement address */
         case NO_ALERT:
         case BTLEJUICE:
         case GATTACKER:
-            snprintf(buffer, sizeof(buffer) - strlen(buffer), " -- %02X:%02X:%02X:%02X:%02X:%02X",
-                     alert->adv_addr[5], alert->adv_addr[4], alert->adv_addr[3], alert->adv_addr[2],
+            snprintf(buffer, sizeof(buffer) - strlen(buffer),
+                     " -- %02X:%02X:%02X:%02X:%02X:%02X",
+                     alert->adv_addr[5], alert->adv_addr[4],
+                     alert->adv_addr[3], alert->adv_addr[2],
                      alert->adv_addr[1], alert->adv_addr[0]);
             break;
 
@@ -96,7 +106,7 @@ static void log_alert(struct alert_t *alert)
 }
 
 
-/****************************************************************************/
+/*****************************************************************************/
 
 void srcc_alert(enum alert_num nb, uint32_t timestamp, uint8_t addr[])
 {

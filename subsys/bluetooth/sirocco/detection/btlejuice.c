@@ -16,7 +16,7 @@ LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 #define BTLEJUICE_SCAN_INTERVAL    0x0010
 #define BTLEJUICE_SCAN_WINDOW      0x0010
 
-static bool is_scanning = false;
+bool is_btlejuice_scanning = false;
 
 
 static void srcc_btlejuice_cb(const bt_addr_le_t *remote_addr, int8_t rssi,
@@ -58,7 +58,7 @@ static void srcc_start_btlejuice_bg_scan(void)
 		return;
 	}
 
-    is_scanning = true;
+    is_btlejuice_scanning = true;
     LOG_DBG("Sirocco BTLEJuice module started");
 
     return;
@@ -76,7 +76,7 @@ static void srcc_stop_btlejuice_bg_scan(void)
 		return;
 	}
 
-    is_scanning = false;
+    is_btlejuice_scanning = false;
     LOG_DBG("Sirocco BTLEJuice module stopped");
 
     return;
@@ -89,7 +89,7 @@ void srcc_btlejuice_conn_cb(struct bt_conn *conn, uint8_t err)
     if (err == 0) {
         srcc_start_btlejuice_bg_scan();
     } else {
-        LOG_ERR("BTLEJuice module not started (err %d)\n", err);
+        LOG_ERR("BTLEJuice module not started (err %d)", err);
     }
 }
 

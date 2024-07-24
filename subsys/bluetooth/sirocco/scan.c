@@ -30,7 +30,9 @@ SYS_HASHMAP_SC_DEFINE_STATIC_ADVANCED(scan_hmap,
 #if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
 static uint32_t debug_scan_data_counter = 0;
 #endif
-
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+extern bool is_btlejuice_scanning;
+#endif  /* CONFIG_BT_SRCC_BTLEJUICE */
 
 /* Printk functions */
 #define BUFFER_SIZE 512
@@ -340,7 +342,14 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
 //#endif  /* CONFIG_BT_SRCC_BTLEJUICE && CONFIG_BT_PERIPHERAL */
 
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+    /* We do such way to avoid triggering GATTacker module when BTLEJuice is running. */
+    if (!is_btlejuice_scanning) {
+#endif  /* CONFIG_BT_SRCC_BTLEJUICE */
     srcc_detect_oasis_gattacker(addr, scan_data, scan_metric);
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+    }
+#endif  /* CONFIG_BT_SRCC_BTLEJUICE */
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
 

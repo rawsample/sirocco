@@ -19,15 +19,13 @@
 #include "lll_adv_types.h"
 #include "lll_adv.h"
 
-
-
 #include "lll_sirocco.h"
 
+#include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/sirocco.h>
 
 
-
-static uint32_t scan_rx_count = 0;
+LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 
 
@@ -41,16 +39,13 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct pdu_data *pdu_data;
     uint32_t timestamp;
 
-    //printk("SCAN RX COUNT = %d\n", scan_rx_count);
-    //printk("metric_item size = %d bytes", sizeof(struct metric_item));
-
     timestamp = srcc_timing_capture_ms();
 
     pdu_data = radio_pkt_get();
 
     item = srcc_malloc_conn_item();
     if (item == NULL) {
-        printk("Failed to allocate memory from the heap for conn rx item :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for conn rx item :(");
         return;
     }
 
@@ -72,7 +67,7 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     if (item->metric.payload != NULL) {
         memcpy(item->metric.payload, pdu_data->lldata, pdu_data->len);
     } else {
-        printk("Failed to allocate memory for pdu_data\n");
+        LOG_ERR("Failed to allocate memory for pdu_data");
     }
 #else
     item->metric.payload = NULL;
@@ -94,7 +89,7 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
 
     item = srcc_malloc_conn_item();
     if (item == NULL) {
-        printk("Failed to allocate memory from the heap for conn tx item :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for conn tx item :(");
         return;
     }
 
@@ -122,10 +117,6 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct pdu_adv *pdu_adv;
     uint32_t timestamp;
 
-    //printk("SCAN RX\n");
-    scan_rx_count++;
-    //return;
-
     timestamp = srcc_timing_capture_ms();
 
     /* Check if it is one of the type we monitor */
@@ -147,7 +138,7 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     item = srcc_malloc_scan_item();
     if (item == NULL) {
-        printk("Failed to allocate memory from the heap for scan rx item :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for scan rx item :(");
         return;
     }
 
@@ -200,7 +191,7 @@ void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
 
-    //printk("ADV RX: 0x%x\n", pdu_adv->type);
+    //LOG_DBG("ADV RX: 0x%x", pdu_adv->type);
 
     /* Note: We do not consider secondary advertising physical channel here. */
     switch (pdu_adv->type) {
@@ -215,7 +206,7 @@ void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     item = srcc_malloc_adv_item();
     if (item == NULL) {
-        printk("Failed to allocate memory from the heap for adv rx item :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for adv rx item :(");
         return;
     }
 
@@ -267,7 +258,7 @@ void lll_srcc_adv_tx(struct lll_adv *lll)
 
     item = srcc_malloc_adv_item();
     if (item == NULL) {
-        printk("Failed to allocate memory from the heap for adv tx item :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for adv tx item :(");
         return;
     }
 

@@ -29,7 +29,7 @@ struct scan_data {
     uint64_t counter;
     uint32_t previous_timestamp;
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    struct oasis_gattacker_data channel[3];
+    struct oasis_gattacker_data gattacker;
     //struct srcc_scan_metric previous_adv_metric;
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 };

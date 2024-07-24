@@ -165,14 +165,12 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *scan_data,
      * The GATTacker detection module works only on the same channel
      * because of the estimated ADV interval.
      */
-    gattacker_data = &(scan_data->channel[metric->channel]);
-    /*
-    if (data->oasis_gattacker_data.last_channel != metric->channel) {
-        data->oasis_gattacker_data.last_channel = metric->channel;
-        data->oasis_gattacker_data.threshold = 0;
+    gattacker_data = &(scan_data->gattacker);
+    if (gattacker_data->last_channel != metric->channel) {
+        gattacker_data->last_channel = metric->channel;
+        gattacker_data->threshold = 0;
         return;
     }
-    */
 
     /* Calculare the interval between two ADV_IND in cycles */
     adv_interval = metric->timestamp - gattacker_data->previous_adv_timestamp;
@@ -184,16 +182,15 @@ void srcc_detect_oasis_gattacker(uint64_t address, struct scan_data *scan_data,
         && metric->adv_ind.addr[4] == periph_addr[4]
         && metric->adv_ind.addr[5] == periph_addr[5]
         ) {
-    LOG_DBG("chan %d - adv_interval %u - timestamp %u - previous %u",
-            metric->channel, adv_interval, metric->timestamp, gattacker_data->previous_adv_timestamp);
-    LOG_DBG("%02X:%02X:%02X:%02X:%02X:%02X - chan %d - %u ms",
+    LOG_DBG("adv_interval %u - timestamp %u - previous %u",
+            adv_interval, metric->timestamp, gattacker_data->previous_adv_timestamp);
+    LOG_DBG("%02X:%02X:%02X:%02X:%02X:%02X - %u ms",
            metric->adv_ind.addr[5],
            metric->adv_ind.addr[4],
            metric->adv_ind.addr[3],
            metric->adv_ind.addr[2],
            metric->adv_ind.addr[1],
            metric->adv_ind.addr[0],
-           metric->channel,
            adv_interval);
     }
 

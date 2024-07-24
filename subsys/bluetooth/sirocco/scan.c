@@ -27,7 +27,9 @@ SYS_HASHMAP_SC_DEFINE_STATIC_ADVANCED(scan_hmap,
                                       SYS_HASHMAP_CONFIG(SCAN_MAX_ENTRY, SYS_HASHMAP_DEFAULT_LOAD_FACTOR)
 );
 
+#if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
 static uint32_t debug_scan_data_counter = 0;
+#endif
 
 
 /* Printk functions */
@@ -175,16 +177,18 @@ static struct scan_data *malloc_scan_data(void)
 
     scan_data = k_calloc(1, sizeof(struct scan_data));
     if (scan_data == NULL) {
-        LOG_ERR("Failed to allocate memory for scan_data :( count = %d",
-                debug_scan_data_counter);
+        LOG_ERR("Failed to allocate memory for scan data :(");
+#if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
+        LOG_DBG("count = %d", debug_scan_data_counter);
+#endif
         return NULL;
     }
+#if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
     debug_scan_data_counter++;
+#endif
 
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    for (int i=0; i<3; i++) {
-        init_oasis_gattacker_data(&scan_data->channel[i]);
-    }
+    init_oasis_gattacker_data(&scan_data->gattacker);
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     return scan_data;
@@ -193,13 +197,13 @@ static struct scan_data *malloc_scan_data(void)
 static void free_scan_data(struct scan_data *scan_data)
 {
 #if defined(CONFIG_BT_SRCC_OASIS_GATTACKER)
-    for (int i=0; i<3; i++) {
-        clean_oasis_gattacker_data(&scan_data->channel[i]);
-    }
+    clean_oasis_gattacker_data(&scan_data->gattacker);
 #endif  /* CONFIG_BT_SRCC_OASIS_GATTACKER */
 
     k_free(scan_data);
+#if (CONFIG_BT_SRCC_LOG_LEVEL >= 4)
     debug_scan_data_counter--;
+#endif
 }
 
 

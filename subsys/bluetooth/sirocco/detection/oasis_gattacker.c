@@ -11,6 +11,7 @@
 
 LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
+
 #define OASIS_GATTACKER_SUSPICIOUS_THRESHOLD 50
 
 #define MAX_ADV_DELAY 300    /* in ms */
@@ -64,7 +65,7 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
     ret = ring_buf_peek(&gattacker_data->adv_intervals.rb,
                         (uint8_t *)buf, RBUFF_SIZE);
     if (ret != RBUFF_SIZE) {
-        LOG_ERR("Failed to peek the ring buffer\n");
+        LOG_ERR("Failed to peek the ring buffer");
         return -1;
     }
 
@@ -94,8 +95,8 @@ static int estimate_threshold(struct oasis_gattacker_data *gattacker_data,
         pbuf_ptr += written;
     }
     *pbuf_ptr = '\0';
-#endif /* CONFIG_BT_SRCC_LOG_LEVEL >= 4 */
     LOG_DBG("buf: %s", print_buf);
+#endif /* CONFIG_BT_SRCC_LOG_LEVEL >= 4 */
     }
 
     /* Compute the detection threshold */

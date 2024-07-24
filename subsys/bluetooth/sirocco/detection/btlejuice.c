@@ -1,11 +1,15 @@
 /*
  * Do not take into account if the peripheral connects to multiple centrals at the same time.
  */
+#include <zephyr/logging/log.h>
+
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/sirocco.h>
 
+
+LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 
 /* Modify these to adjust the scanning speed. */
@@ -29,7 +33,7 @@ static void srcc_btlejuice_cb(const bt_addr_le_t *remote_addr, int8_t rssi,
 
         res = memcmp(&local_addrs[i].a.val, &remote_addr->a.val, BDADDR_SIZE*sizeof(uint8_t));
         if (res == 0) {
-            printk(">>> [SIROCCO] BTLEJuice attack detected !!!\n");
+            LOG_DBG(">>> BTLEJuice attack detected !!!");
             srcc_alert(BTLEJUICE, srcc_timing_capture_ms(), (uint8_t *) remote_addr->a.val);
         }
     }
@@ -50,12 +54,12 @@ static void srcc_start_btlejuice_bg_scan(void)
     /* Start scanning */
 	err = bt_le_scan_start(&scan_param, srcc_btlejuice_cb);
 	if (err) {
-		printk("Starting scanning failed (err %d)\n", err);
+		LOG_ERR("Starting scanning failed (err %d)", err);
 		return;
 	}
 
     is_scanning = true;
-    printk("Sirocco BTLEJuice module started\n");
+    LOG_DBG("Sirocco BTLEJuice module started");
 
     return;
 }
@@ -68,12 +72,12 @@ static void srcc_stop_btlejuice_bg_scan(void)
     /* Stop scanning */
 	err = bt_le_scan_stop();
 	if (err) {
-		printk("Stopping scanning failed (err %d)\n", err);
+		LOG_ERR("Stopping scanning failed (err %d)", err);
 		return;
 	}
 
     is_scanning = false;
-    printk("Sirocco BTLEJuice module stopped\n");
+    LOG_DBG("Sirocco BTLEJuice module stopped");
 
     return;
 }
@@ -85,7 +89,7 @@ void srcc_btlejuice_conn_cb(struct bt_conn *conn, uint8_t err)
     if (err == 0) {
         srcc_start_btlejuice_bg_scan();
     } else {
-        printk("BTLEJuice module not started (err %d)\n", err);
+        LOG_ERR("BTLEJuice module not started (err %d)\n", err);
     }
 }
 

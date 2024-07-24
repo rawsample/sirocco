@@ -39,14 +39,14 @@ void srcc_detect_injectable(struct srcc_conn_metric *conn_metric)
         /* Initialize new structure */
         data = k_malloc(sizeof(struct injectable_data));
         if (data == NULL) {
-            printk("Fail to allocate memory for injectable :(\n");
+            LOG_ERR("Fail to allocate memory for injectable :(");
             return;
         }
 
         data->previous_conn_timestamp = 0;
         ret = sys_hashmap_insert(&injectable_hmap, access_addr, ((uint32_t)data) | 0ULL, NULL);
         if (!ret) {
-            printk("Couldn't insert previous_timestamp in injectable_hmap\n");
+            LOG_ERR("Couldn't insert previous_timestamp in injectable_hmap");
             return;
         }
     }

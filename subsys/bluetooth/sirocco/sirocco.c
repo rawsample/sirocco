@@ -44,83 +44,6 @@ struct k_poll_event events[5] = {
 #define SRCC_THREAD_STACK_SIZE 4096
 #define SRCC_THREAD_PRIORITY 5
 
-/*
-static void printk_conn(struct srcc_ble_conn *conn)
-{
-    printk("struct src_ble_conn = { "
-           "\n\taccess_address = %02x:%02x:%02x:%02x, "
-           "\n\tcrc_init = %02x:%02x:%02x, "
-           "\n\tchannel_map = %02x %02x %02x %02x %02x, "
-           "\n\thop_interval = %u, "
-           "\n\tpacket_lost_count = %u, "
-           "\n\ttx_counter = %u, "
-           "\n\trx_counter = %u, "
-           "\n}\n",
-           conn->access_address[0], conn->access_address[1],
-           conn->access_address[2], conn->access_address[3],
-           conn->crc_init[0], conn->crc_init[1], conn->crc_init[2],
-           conn->channel_map[0], conn->channel_map[1],
-           conn->channel_map[2], conn->channel_map[3],
-           conn->channel_map[4],
-           conn->hop_interval,
-           conn->packet_lost_counter,
-           conn->tx_counter, conn->rx_counter
-    );
-}
-
-static void printk_pkt(struct srcc_ble_pkt *pkt)
-{
-    printk("struct srcc_ble_packet = { "
-           "\n\ttimestamp = %u, "
-           "\n\tcrc_is_valid = %hu, "
-           "\n\trssi = %hu, "
-           "\n\tlen = %hhu, "
-           "\n\theader = { "
-           "\n\t\tlld_id = 0x%x, "
-           "\n\t\tnesn = 0x%x, "
-           "\n\t\tsn = 0x%x, "
-           "\n\t\tmd = 0x%x, "
-           "\n\t\trfu = 0x%x, "
-           "\n\t}, "
-           "\n\tpayload = ",
-           pkt->timestamp, pkt->crc_is_valid, pkt->rssi, pkt->len, 
-           pkt->header.ll_id & 0x3,
-           pkt->header.nesn & 0x1,
-           pkt->header.sn & 0x1,
-           pkt->header.md & 0x1,
-           pkt->header.rfu & 0x7
-    );
-    for (int i=0; i<pkt->len && i<255; i++) {
-        printk("%02x ", pkt->payload[i]);
-    }
-    printk("\n}\n");
-}
-*/
-
-/*
-static void run_detection_modules(struct srcc_metric *metric)
-{
-#if defined(CONFIG_BT_SRCC_BTLEJACK)
-    srcc_detect_btlejack(metric);
-#endif
-#if defined(CONFIG_BT_SRCC_BTLEJUICE)
-    srcc_detect_btlejuice(metric);
-#endif
-#if defined(CONFIG_BT_SRCC_GATTACKER)
-    srcc_detect_gattacker(metric);
-#endif
-#if defined(CONFIG_BT_SRCC_INJECTABLE)
-    srcc_detect_injectable(metric);
-#endif
-#if defined(CONFIG_BT_SRCC_JAMMING)
-    srcc_detect_jamming(metric);
-#endif
-#if defined(CONFIG_BT_SRCC_KNOB)
-    srcc_detect_knob(metric);
-#endif
-}
-*/
-
 
 /* Main loop */
 static void sirocco_main_loop(void *, void *, void *)
@@ -135,11 +58,10 @@ static void sirocco_main_loop(void *, void *, void *)
     LOG_DBG("sizeof(adv_metric) = %d bytes", sizeof(struct srcc_adv_metric));
 
 	while(1) {
-		//printk("[SIROCCO] main loop\n");
 
         ret = k_poll(events, 3, K_FOREVER);
         if (ret < 0) {
-            printk("[SIROCCO] An error occured while polling fifo events: %d", ret);
+            LOG_ERR("An error occured while polling fifo events: %d", ret);
         }
 
         if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
@@ -180,8 +102,6 @@ static void sirocco_main_loop(void *, void *, void *)
         events[2].state = K_POLL_STATE_NOT_READY;
         events[3].state = K_POLL_STATE_NOT_READY;
         events[4].state = K_POLL_STATE_NOT_READY;
-
-        //k_sleep(K_MSEC(1000));
 	}
 }
 
@@ -208,17 +128,9 @@ void srcc_cb_register(struct srcc_cb *cb)
 	callback_list = cb;
 }
 
-/*
-void srcc_notify_conn_init(void)
-{
-    return;
-}
-*/
 
 void srcc_notify_conn_rx(struct srcc_conn_item *item)
 {
-    //printk("[RX ISR] sirocco\n");
-
     k_fifo_put(&conn_rx_fifo, item);
 
     /* Callbacks
@@ -232,8 +144,6 @@ void srcc_notify_conn_rx(struct srcc_conn_item *item)
 
 void srcc_notify_conn_tx(struct srcc_conn_item *item)
 {
-    //printk("[TX ISR] sirocco\n");
-
     k_fifo_put(&conn_tx_fifo, item);
 
     /* Callbacks
@@ -247,8 +157,6 @@ void srcc_notify_conn_tx(struct srcc_conn_item *item)
 
 void srcc_notify_scan_rx(struct srcc_scan_item *item)
 {
-    //printk("[RX ISR] sirocco\n");
-
     k_fifo_put(&scan_rx_fifo, item);
 
     /* Callbacks
@@ -297,14 +205,17 @@ void srcc_init(void)
     /* Create memory pools for passing metric to main thread */
     ret = srcc_init_conn_alloc(SRCC_MALLOC_COUNT_ITEMS);
     if (ret < 0) {
+        LOG_ERR("Failed to initialize connection memory pool");
         return;
     }
     ret = srcc_init_scan_alloc(SRCC_MALLOC_COUNT_ITEMS);
     if (ret < 0) {
+        LOG_ERR("Failed to initialize scan memory pool");
         return;
     }
     ret = srcc_init_adv_alloc(SRCC_MALLOC_COUNT_ITEMS);
     if (ret < 0) {
+        LOG_ERR("Failed to initialize advertisement memory pool");
         return;
     }
 

@@ -4,12 +4,16 @@
  */
 #include <inttypes.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/hash_map.h>
 
 #include <zephyr/bluetooth/sirocco.h>
 
 #include "timing.h"
 #include "scan.h"
+
+
+LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 
 #define TIMEOUT_MSEC 30000   /* in ms */
@@ -171,7 +175,7 @@ static struct scan_data *malloc_scan_data(void)
 
     scan_data = k_calloc(1, sizeof(struct scan_data));
     if (scan_data == NULL) {
-        printk("Failed to allocate memory for scan_data :( count = %d\n",
+        LOG_ERR("Failed to allocate memory for scan_data :( count = %d",
                 debug_scan_data_counter);
         return NULL;
     }
@@ -210,8 +214,8 @@ static void remove_timeout_callback(uint64_t key, uint64_t value, void *cookie)
     struct timeout_data *timeout = (struct timeout_data *)cookie;
     struct scan_data *scan_data = (struct scan_data *)((uint32_t)value);
 
-    //printk("Cookie->threshold is %u\n", timeout->threshold);
-    //printk("(%#llx -> %#llx) ", key, value);
+    //LOG_DBG("Cookie->threshold is %u", timeout->threshold);
+    //LOG_DBG("(%#llx -> %#llx) ", key, value);
 
     /* Let's not delete more than 5 entries at a time */
     if (timeout->len > 10) {
@@ -236,7 +240,7 @@ static int remove_timeout_entries()
     timeout.len = 0;
     timeout.threshold = srcc_timing_capture_ms() - TIMEOUT_MSEC;
 
-    //printk("Threshold is %u\n", timeout.threshold);
+    //LOG_DBG("Threshold is %u", timeout.threshold);
 
     sys_hashmap_foreach(&scan_hmap, remove_timeout_callback, &timeout);
 
@@ -244,11 +248,11 @@ static int remove_timeout_entries()
         success = sys_hashmap_remove(&scan_hmap, timeout.keys[i], &ptr);
         if (success) {
             scan_data = (struct scan_data *)((uint32_t)ptr);
-            //printk("Removed from hashmap %llx and freeing %p\n", timeout.keys[i], scan_data);
+            //LOG_DBG("Removed from hashmap %llx and freeing %p", timeout.keys[i], scan_data);
             free_scan_data(scan_data);
             count++;
         } else {
-            printk("Failed to remove from hashmap 0x%#llx\n", ptr);
+            LOG_ERR("Failed to remove from hashmap 0x%#llx", ptr);
         }
     }
 
@@ -289,38 +293,37 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
         /* Init new scan_data */
         scan_data = malloc_scan_data();
         if (scan_data == NULL) {
-            //printk("Failed to allocated scan_data...try freeing old entries...\n");
+            //LOG_DBG("Failed to allocated scan_data...try freeing old entries...");
             remove_timeout_entries();
-            //printk("try again...\n");
+            //LOG_DBG("try again...");
             scan_data = malloc_scan_data();
             if (scan_data == NULL) {
-                //printk("...no sucess, leaving!\n");
+                //LOG_DBG("...no sucess, leaving!");
                 return;
             }
-            //printk("...yes!\n");
+            //LOG_DBG("...yes!");
         }
-        //printk("Allocated scan_data %p\n", scan_data);
+        //LOG_DBG("Allocated scan_data %p", scan_data);
 
         success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
         if (!success) {
-            //printk("Failed to insert into scan_hmap...try freeing...\n");
+            //LOG_DBG("Failed to insert into scan_hmap...try freeing...");
             remove_timeout_entries();
             success = sys_hashmap_insert(&scan_hmap, addr, ((uint32_t)scan_data) | 0ULL, NULL);
             if (!success) {
-                //printk("...no sucess, leaving!\n");
+                //LOG_DBG("...no sucess, leaving!");
                 free_scan_data(scan_data);
                 return;
             }
-            //printk("good, continuing!\n");
+            //LOG_DBG("good, continuing!");
         }
     }
 
     scan_data->counter++;
 
     /*
-    printk("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu"
-           " %hu : %u | %u : %u"
-           "\n",
+    LOG_DBG("[SIROCCO] SCAN RX: %" PRIx64 " -- %llu"
+           " %hu : %u | %u : %u",
            addr, scan_data->counter,
            scan_metric->interval, adv_interval,
            scan_metric->timestamp, scan_data->previous_metric.timestamp

@@ -2,7 +2,12 @@
  *  A custom allocator which allocate memory in a pool divided of egual size blocks.
  */
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/sirocco.h>
+
+
+LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
+
 
 /* An interface to control the memory allocation for metric items
  * placed in the FIFOs.
@@ -29,21 +34,26 @@ static struct srcc_alloc adv_allocator = { NULL, NULL, 0, 0, 0 };
 
 
 
-static void printk_free_list(struct srcc_alloc *allocator)
+__attribute__((unused))
+static void logdbg_free_list(struct srcc_alloc *allocator)
 {
     struct memory_block *mb;
     uint32_t count;
+    char buffer[512];
 
     mb = allocator->free_list;
     count = 0;
 
-    printk("Free list: ");
+    snprintf(buffer, sizeof(buffer), "Free list: ");
     while (mb != NULL) {
         count++;
-        printk("%p (%p) --> ", mb, mb->data);
+        snprintf(buffer, sizeof(buffer) - strlen(buffer), "%p (%p) --> ",
+                 mb, mb->data);
         mb = mb->next;
     }
-    printk("NULL (count = %d)\n", count);
+    snprintf(buffer, sizeof(buffer) - strlen(buffer), "NULL (count = %d)",
+             count);
+    LOG_DBG("%s", buffer);
 }
 
 static int init_malloc_item(struct srcc_alloc *allocator,
@@ -59,7 +69,7 @@ static int init_malloc_item(struct srcc_alloc *allocator,
     /* Create the memory pool */
     allocator->memory_pool = k_malloc(pool_size);
     if (allocator->memory_pool == NULL) {
-        printk("Failed to allocate memory from the heap for the item buffer :(\n");
+        LOG_ERR("Failed to allocate memory from the heap for the item buffer :(");
         return -ENOMEM;
     }
     
@@ -71,7 +81,7 @@ static int init_malloc_item(struct srcc_alloc *allocator,
 
         mb = (struct memory_block *)((char *)allocator->memory_pool + i * block_size + item_size);
         mb->data = (void *)((char *)allocator->memory_pool + i * block_size);    // to verify
-        //printk("New memory block @ %p with data @ %p\n", mb, mb->data);
+        //LOG_DBG("New memory block @ %p with data @ %p\n", mb, mb->data);
         mb->next = allocator->free_list;
         allocator->free_list = mb;
     }
@@ -86,8 +96,9 @@ static void clean_malloc_item(struct srcc_alloc *allocator)
 {
     /* Verify all memory blocks are free before cleaning up...usefull?
     if (allocator->count != allocator->capacity) {
-        printk("Free all allocated items before cleaning\n");
-        printk("capacity = %d alloc_count = %d\n", allocator->capacity, allocator->count);
+        LOG_ERR("Free all allocated items before cleaning\n");
+        LOG_DBG("capacity = %d alloc_count = %d\n",
+                allocator->capacity, allocator->count);
 
     } else {
     */
@@ -98,8 +109,9 @@ static void clean_malloc_item(struct srcc_alloc *allocator)
 static void *malloc_item(struct srcc_alloc *allocator)
 {
     if (allocator->free_list == NULL) {
-        printk("Memory pool is full :(\n");
-        printk("capacity = %d alloc_count = %d\n", allocator->capacity, allocator->count);
+        LOG_ERR("Memory pool is full :(\n");
+        LOG_DBG("capacity = %d alloc_count = %d\n",
+                allocator->capacity, allocator->count);
         return NULL;
     }
 
@@ -118,10 +130,10 @@ static void free_item(struct srcc_alloc *allocator, void *ptr)
         return;
     }
 
-    //printk("Free: capacity = %d alloc_count = %d\n", allocator->capacity, allocator->count);
+    //LOG_DBG("Free: capacity = %d alloc_count = %d\n", allocator->capacity, allocator->count);
 
     struct memory_block *mb = (struct memory_block *)((char *)ptr + allocator->item_size);
-    //printk("ptr @ 0x%08x ?= data %p mb @ %p\n", (unsigned int) ptr, mb->data, mb);
+    //LOG_DBG("ptr @ 0x%08x ?= data %p mb @ %p\n", (unsigned int) ptr, mb->data, mb);
 
     //memset(mb->data, 0, sizeof(allocator->item_size));
 

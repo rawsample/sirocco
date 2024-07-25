@@ -37,8 +37,13 @@ void run_conn_rx_detection(struct srcc_conn_metric *conn_metric)
     /* Call detection modules here */
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
     srcc_detect_btlejack(conn_metric);
-#endif
+#endif /* CONFIG_BT_SRCC_BTLEJACK */
+
 #if defined(CONFIG_BT_SRCC_INJECTABLE)
     srcc_detect_injectable(conn_metric);
-#endif
+#endif /* CONFIG_BT_SRCC_INJECTABLE */
+
+#if defined(CONFIG_BT_SRCC_KNOB)
+    srcc_detect_knob(conn_metric);
+#endif /* CONFIG_BT_SRCC_KNOB */
 }

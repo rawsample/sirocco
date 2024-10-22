@@ -223,6 +223,23 @@ void srcc_init(void)
     srcc_timing_init();
     srcc_timing_start();
 
+
+#if defined(CONFIG_BT_SRCC_BTLEJACK)
+    LOG_DBG("BTLEJack module loaded");
+#endif
+#if defined(CONFIT_BT_SRCC_OASIS_GATTACKER)
+    LOG_DBG("GATTacker module loaded");
+#endif
+#if defined(CONFIG_BT_SRCC_BTLEJUICE)
+    LOG_DBG("BTLEJuice module loaded");
+#endif
+#if defined(CONFIG_BT_SRCC_INJECTABLE)
+    LOG_DBG("InjectaBLE module loaded");
+#endif
+#if defined(CONFIG_BT_SRCC_KNOB)
+    LOG_DBG("KNOB module loaded");
+#endif
+
     LOG_DBG("Sirocco initialized");
     return;    
 }

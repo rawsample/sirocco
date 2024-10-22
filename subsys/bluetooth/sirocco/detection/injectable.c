@@ -53,13 +53,19 @@ void srcc_detect_injectable(struct srcc_conn_metric *conn_metric)
 
     conn_interval = abs(conn_metric->timestamp - data->previous_conn_timestamp);
     interval_ms = conn_metric->interval * 1.25;
+    /*
+    */
     LOG_DBG("(TSP) %d - (PREV TST) %d = %d.%06d <? (lll_interval) %d.%06d",
             conn_metric->timestamp, data->previous_conn_timestamp,
             (int)conn_interval, (int)((conn_interval - (int)conn_interval) * 1000000),
             (int)interval_ms, (int)((interval_ms - (int)interval_ms) * 1000000));
 
+
+    // ajouter un threshold minimum
+
     /* The threshold is the one set during the connection negotiation. */
     if (conn_interval < conn_metric->interval) {
+        printk("Injectable detected\n");
         srcc_alert(INJECTABLE, srcc_timing_capture_ms(), conn_metric->access_addr);
     }
 

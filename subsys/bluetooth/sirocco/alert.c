@@ -74,14 +74,16 @@ static void log_alert(struct alert_t *alert)
         case KNOB:          prefix = "KNOB: "; break;
     }
     snprintf(buffer, sizeof(buffer), "%s", prefix);
-    snprintf(buffer, sizeof(buffer) - strlen(buffer), "%d", alert->timestamp);
+    snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer),
+             "%d", alert->timestamp);
 
     switch (alert->nb) {
         /* access address */
         case BTLEJACK:
         case INJECTABLE:
         case KNOB:
-            snprintf(buffer, sizeof(buffer) - strlen(buffer),
+            snprintf(buffer + strlen(buffer),
+                     sizeof(buffer) - strlen(buffer),
                      " -- %02X:%02X:%02X:%02X",
                      alert->access_addr[3], alert->access_addr[2],
                      alert->access_addr[1], alert->access_addr[0]);
@@ -91,7 +93,8 @@ static void log_alert(struct alert_t *alert)
         case NO_ALERT:
         case BTLEJUICE:
         case GATTACKER:
-            snprintf(buffer, sizeof(buffer) - strlen(buffer),
+            snprintf(buffer + strlen(buffer),
+                     sizeof(buffer) - strlen(buffer),
                      " -- %02X:%02X:%02X:%02X:%02X:%02X",
                      alert->adv_addr[5], alert->adv_addr[4],
                      alert->adv_addr[3], alert->adv_addr[2],

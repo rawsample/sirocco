@@ -39,7 +39,8 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct pdu_data *pdu_data;
     uint32_t timestamp;
 
-    timestamp = srcc_timing_capture_ms();
+    // timestamp = srcc_timing_capture_ms();
+    timestamp = srcc_timing_capture_us();
 
     pdu_data = radio_pkt_get();
 
@@ -54,6 +55,7 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     item->metric.crc_is_valid = crc_ok;
 #if defined(CONFIG_BT_SRCC_INJECTABLE)
     item->metric.interval = lll->interval;
+    item->metric.conn_event_number = lll->event_counter;
 #endif
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
     item->metric.packet_lost_counter = 0;
@@ -83,7 +85,8 @@ void lll_srcc_conn_tx(struct lll_conn *lll)
     struct pdu_data *pdu_data;
     uint32_t timestamp;
 
-    timestamp = srcc_timing_capture_ms();
+    // timestamp = srcc_timing_capture_ms();
+    timestamp = srcc_timing_capture_us();
 
     pdu_data = radio_pkt_get();
 
@@ -117,7 +120,8 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct pdu_adv *pdu_adv;
     uint32_t timestamp;
 
-    timestamp = srcc_timing_capture_ms();
+    // timestamp = srcc_timing_capture_ms();
+    timestamp = srcc_timing_capture_us();
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
@@ -186,7 +190,8 @@ void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct pdu_adv *pdu_adv;
     uint32_t timestamp;
 
-    timestamp = srcc_timing_capture_ms();
+    // timestamp = srcc_timing_capture_ms();
+    timestamp = srcc_timing_capture_us();
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
@@ -238,7 +243,8 @@ void lll_srcc_adv_tx(struct lll_adv *lll)
     struct pdu_adv *pdu_adv;
     uint32_t timestamp;
 
-    timestamp = srcc_timing_capture_ms();
+    // timestamp = srcc_timing_capture_ms();
+    timestamp = srcc_timing_capture_us();
 
 
     /* Check if it is one of the type we monitor */

@@ -262,6 +262,7 @@ struct __aligned(4) srcc_conn_metric {
     uint8_t access_addr[4];
 #if defined(CONFIG_BT_SRCC_INJECTABLE)
     uint16_t interval;
+    uint32_t conn_event_number;
 #endif
 
     /* Meta data */

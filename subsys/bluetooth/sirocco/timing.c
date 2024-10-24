@@ -53,6 +53,11 @@ uint32_t srcc_timing_cycles_to_ms(uint32_t cycles)
 	return (cycles) / 16000;
 }
 
+uint32_t srcc_timing_cycles_to_us(uint32_t cycles)
+{
+	return (cycles) / 16;
+}
+
 
 uint32_t srcc_timing_capture_cycles(void)
 {
@@ -72,6 +77,19 @@ static uint32_t previous_tsp = 0;
 uint32_t srcc_timing_capture_ms(void)
 {
     uint32_t tsp = srcc_timing_cycles_to_ms(srcc_timing_capture_cycles());
+
+    if (tsp < previous_tsp) {
+        overflow_counter++;
+    }
+
+    previous_tsp = tsp;
+
+    return tsp + overflow_counter * OVERFLOW_MS;
+}
+
+uint32_t srcc_timing_capture_us(void)
+{
+    uint32_t tsp = srcc_timing_cycles_to_us(srcc_timing_capture_cycles());
 
     if (tsp < previous_tsp) {
         overflow_counter++;

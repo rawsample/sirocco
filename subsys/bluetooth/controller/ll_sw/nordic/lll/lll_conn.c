@@ -40,6 +40,9 @@
 #include "lll_prof_internal.h"
 
 #include "lll_sirocco.h"
+#if defined(CONFIG_SRCC_ANALYSIS)
+#include <zephyr/bluetooth/srcc_time_analysis.h>
+#endif
 
 #include <zephyr/bluetooth/hci_types.h>
 
@@ -221,6 +224,10 @@ void lll_conn_isr_rx(void *param)
 	if (IS_ENABLED(CONFIG_BT_CTLR_PROFILE_ISR)) {
 		lll_prof_latency_capture();
 	}
+
+#if defined(CONFIG_SRCC_ANALYSIS)
+    start_timestamp_conn_rx_isr();
+#endif
 
 	/* Read radio status and events */
 	trx_done = radio_is_done();
@@ -503,6 +510,10 @@ lll_conn_isr_rx_exit:
 #if defined(CONFIG_BT_CTLR_PROFILE_ISR)
 	lll_prof_send();
 #endif /* CONFIG_BT_CTLR_PROFILE_ISR */
+
+#if defined(CONFIG_SRCC_ANALYSIS)
+    stop_timestamp_conn_rx_isr();
+#endif
 }
 
 void lll_conn_isr_tx(void *param)
@@ -513,6 +524,10 @@ void lll_conn_isr_tx(void *param)
 #endif /* CONFIG_BT_CTLR_DF_CONN_CTE_TX */
 	struct lll_conn *lll;
 	uint32_t hcto;
+
+#if defined(CONFIG_SRCC_ANALYSIS)
+    start_timestamp_conn_tx_isr();
+#endif
 
 	/* Clear radio tx status and events */
 	lll_isr_tx_status_reset();
@@ -654,6 +669,10 @@ void lll_conn_isr_tx(void *param)
 #if defined(CONFIG_BT_CTLR_LOW_LAT_ULL)
 	ull_conn_lll_tx_demux_sched(lll);
 #endif /* CONFIG_BT_CTLR_LOW_LAT_ULL */
+
+#if defined(CONFIG_SRCC_ANALYSIS)
+    stop_timestamp_conn_tx_isr();
+#endif
 }
 
 void lll_conn_rx_pkt_set(struct lll_conn *lll)

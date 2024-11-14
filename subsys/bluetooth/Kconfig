@@ -212,3 +212,10 @@ config BT_COMPANY_ID
 
 
 endif # BT
+
+config SRCC_ANALYSIS
+
+    bool "Sirocco latency analysis"
+	depends on BT_LL_SW_SPLIT
+	help
+	  This option enables the Sirocco Latency analysis for Bluetooth.

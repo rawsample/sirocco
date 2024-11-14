@@ -23,3 +23,5 @@ add_subdirectory(lib)
 if(CONFIG_BT_SIROCCO)
   add_subdirectory(sirocco)
 endif()
+
+zephyr_sources_ifdef(CONFIG_SRCC_ANALYSIS sirocco/time_analysis.c)

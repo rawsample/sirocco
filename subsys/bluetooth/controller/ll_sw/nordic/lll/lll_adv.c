@@ -49,7 +49,7 @@
 #include "lll_df_internal.h"
 
 #include "lll_sirocco.h"
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
 #include <zephyr/bluetooth/srcc_time_analysis.h>
 #endif
 
@@ -1175,7 +1175,7 @@ static void isr_tx(void *param)
 		node_rx_prof = lll_prof_reserve();
 	}
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     start_timestamp_adv_tx_isr();
 #endif
 
@@ -1244,7 +1244,7 @@ static void isr_tx(void *param)
 				 HAL_RADIO_GPIO_LNA_OFFSET);
 #endif /* HAL_RADIO_GPIO_HAVE_LNA_PIN */
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     stop_timestamp_adv_tx_isr();
 #endif
 
@@ -1273,7 +1273,7 @@ static void isr_rx(void *param)
 		lll_prof_latency_capture();
 	}
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     start_timestamp_adv_rx_isr();
 #endif
 
@@ -1330,7 +1330,7 @@ isr_rx_do_close:
 	radio_isr_set(isr_done, param);
 	radio_disable();
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     stop_timestamp_adv_rx_isr();
 #endif
 }

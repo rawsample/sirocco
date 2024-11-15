@@ -44,7 +44,7 @@
 #include "lll_scan_internal.h"
 
 #include "lll_sirocco.h"
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
 #include <zephyr/bluetooth/srcc_time_analysis.h>
 #endif
 
@@ -691,7 +691,7 @@ static void isr_rx(void *param)
 		lll_prof_latency_capture();
 	}
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     start_timestamp_scan_rx_isr();
 #endif
 
@@ -799,7 +799,7 @@ isr_rx_do_close:
 
 	radio_disable();
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     stop_timestamp_scan_rx_isr();
 #endif
 }

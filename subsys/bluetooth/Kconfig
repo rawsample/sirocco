@@ -213,7 +213,7 @@ config BT_COMPANY_ID
 
 endif # BT
 
-config SRCC_ANALYSIS
+config SRCC_ISR_LATENCY
 
     bool "Sirocco latency analysis"
 	depends on BT_LL_SW_SPLIT

@@ -24,4 +24,4 @@ if(CONFIG_BT_SIROCCO)
   add_subdirectory(sirocco)
 endif()
 
-zephyr_sources_ifdef(CONFIG_SRCC_ANALYSIS sirocco/time_analysis.c)
+zephyr_sources_ifdef(CONFIG_SRCC_ISR_LATENCY sirocco/time_analysis.c)

@@ -40,7 +40,7 @@
 #include "lll_prof_internal.h"
 
 #include "lll_sirocco.h"
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
 #include <zephyr/bluetooth/srcc_time_analysis.h>
 #endif
 
@@ -225,7 +225,7 @@ void lll_conn_isr_rx(void *param)
 		lll_prof_latency_capture();
 	}
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     start_timestamp_conn_rx_isr();
 #endif
 
@@ -511,7 +511,7 @@ lll_conn_isr_rx_exit:
 	lll_prof_send();
 #endif /* CONFIG_BT_CTLR_PROFILE_ISR */
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     stop_timestamp_conn_rx_isr();
 #endif
 }
@@ -525,7 +525,7 @@ void lll_conn_isr_tx(void *param)
 	struct lll_conn *lll;
 	uint32_t hcto;
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     start_timestamp_conn_tx_isr();
 #endif
 
@@ -670,7 +670,7 @@ void lll_conn_isr_tx(void *param)
 	ull_conn_lll_tx_demux_sched(lll);
 #endif /* CONFIG_BT_CTLR_LOW_LAT_ULL */
 
-#if defined(CONFIG_SRCC_ANALYSIS)
+#if defined(CONFIG_SRCC_ISR_LATENCY)
     stop_timestamp_conn_tx_isr();
 #endif
 }

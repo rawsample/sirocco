@@ -7,6 +7,7 @@
 
 
 void init_srcc_analysis(void);
+uint32_t srcc_analysis_capture_cycles(void);
 
 /* Measure the time spent within the ISR for packet reception and emission. */
 void start_timestamp_conn_rx_isr(void);
@@ -23,3 +24,6 @@ void stop_timestamp_adv_tx_isr(void);
 /* Measure the FIFOs latency and throughput */
 void record_dequeue_metric(void);
 void record_enqueue_metric(void);
+
+/* Measure the end to end latency */
+void srcc_e2e_conn_rx(uint32_t e2e_start_cycles);

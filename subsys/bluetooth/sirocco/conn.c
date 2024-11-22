@@ -2,6 +2,7 @@
  *
  */
 #include <zephyr/bluetooth/sirocco.h>
+#include <zephyr/bluetooth/srcc_time_analysis.h>
 
 
 
@@ -46,4 +47,8 @@ void run_conn_rx_detection(struct srcc_conn_metric *conn_metric)
 #if defined(CONFIG_BT_SRCC_KNOB)
     srcc_detect_knob(conn_metric);
 #endif /* CONFIG_BT_SRCC_KNOB */
+
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    srcc_e2e_conn_rx(conn_metric->e2e_start_cycles);
+#endif /* CONFIG_SRCC_E2E_LATENCY */
 }

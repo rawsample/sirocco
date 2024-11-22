@@ -29,4 +29,10 @@ config SRCC_FIFO_LATENCY
 	help
 	  This option enables the latency analysis for FIFO between BLE ISRs and Sirocco main thread.
 
+config SRCC_E2E_LATENCY
+    bool "Sirocco End to End latency analysis"
+	depends on SRCC_ANALYSIS && BT_SIROCCO
+    help
+      This option enables the latency analysis between when the BLE packet is received to data is proceed.
+
 endif # BT_SIROCCO

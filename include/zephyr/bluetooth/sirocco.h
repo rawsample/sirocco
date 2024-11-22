@@ -269,7 +269,10 @@ struct __aligned(4) srcc_conn_metric {
     uint16_t rssi;
 #if defined(CONFIG_BT_SRCC_BTLEJACK)
     uint8_t packet_lost_counter;
-#endif
+#endif /* CONFIG_BT_SRCC_BTLEJACK */
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    uint32_t e2e_start_cycles;
+#endif /*CONFIG_SRCC_E2E_LATENCY */
 
     /* Packet */
     uint16_t crc_is_valid;
@@ -280,7 +283,6 @@ struct __aligned(4) srcc_conn_metric {
     //uint8_t md:1;
     //uint8_t rfu:3;
     uint8_t len;
-
     /* Payload */
     //uint8_t payload[]
     uint8_t *payload;

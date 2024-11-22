@@ -39,9 +39,18 @@ void init_srcc_analysis(void)
 }
 
 
-static uint32_t capture_cycles(void)
+uint32_t srcc_analysis_capture_cycles(void)
 {
     return nrfx_timer_capture(&timer, NRF_TIMER_CC_CHANNEL3);
+}
+
+static uint32_t calculate_elapsed_time(uint32_t start, uint32_t end) {
+    if (end >= start) {
+        return end - start;
+    } else {
+        // timer has overflowed
+        return end + (0xffffffffUL - start) + 1;
+    }
 }
 
 
@@ -234,15 +243,6 @@ void reset_fifo_metrics(void) {
 }
 
 
-static uint32_t calculate_elapsed_time(uint32_t start, uint32_t end) {
-    if (end >= start) {
-        return end - start;
-    } else {
-        // timer has overflowed
-        return end + (0xffffffffUL - start) + 1;
-    }
-}
-
 void analyze_fifo_metrics(void)
 {
     struct fifo_analysis analysis = {
@@ -320,3 +320,114 @@ K_THREAD_DEFINE(fifo_analysis_id,
 				0,
 				0);
 #endif /* CONFIG_SRCC_FIFO_LATENCY */
+
+
+
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+
+struct e2e_metrics {
+    uint32_t start;
+    uint32_t end;
+};
+
+struct e2e_analysis {
+    uint32_t min_latency;
+    uint32_t max_latency;
+    uint64_t avg_latency;
+    uint32_t total_packets;
+};
+
+#define MAX_E2E_METRICS 6100
+static struct e2e_metrics e2e_conn_rx[MAX_E2E_METRICS];
+static atomic_t e2e_conn_rx_index = 0;
+
+void srcc_e2e_conn_rx(uint32_t e2e_start_cycles)
+{
+    struct e2e_metrics metrics;
+
+    metrics.end = srcc_analysis_capture_cycles();
+    metrics.start = e2e_start_cycles;
+
+    if (e2e_conn_rx_index < MAX_E2E_METRICS) {
+        e2e_conn_rx[e2e_conn_rx_index] = metrics;
+        atomic_inc(&e2e_conn_rx_index);
+    }
+}
+
+static void reset_e2e_metrics(void)
+{
+    memset(&e2e_conn_rx, 0, MAX_E2E_METRICS);
+    atomic_set(&e2e_conn_rx_index, 0);
+}
+
+static void analyze_e2e_metrics(void)
+{
+    struct e2e_analysis conn_rx_analysis = {
+        .min_latency = 0xffffffffUL,
+        .max_latency = 0,
+        .avg_latency = 0,
+        .total_packets = 0,
+    };
+    uint64_t total_latency = 0;
+    int count = atomic_get(&e2e_conn_rx_index);
+    count = (count < MAX_E2E_METRICS) ? count : MAX_E2E_METRICS;
+
+    for (int i = 0; i < count; i++) {
+        uint32_t latency = calculate_elapsed_time(
+            e2e_conn_rx[i].start,
+            e2e_conn_rx[i].end
+        );
+
+        /* Update min/max latency */
+        conn_rx_analysis.min_latency = (latency < conn_rx_analysis.min_latency) ? latency : conn_rx_analysis.min_latency;
+        conn_rx_analysis.max_latency = (latency > conn_rx_analysis.max_latency) ? latency : conn_rx_analysis.max_latency;
+        total_latency += latency;
+    }
+
+    /* Calculate average latency */
+    if (count > 0) {
+        conn_rx_analysis.avg_latency = total_latency / count;
+
+    } else {
+        conn_rx_analysis.min_latency = 0;
+    }
+    conn_rx_analysis.total_packets = count;
+
+    /* Print analysis results */
+    const uint32_t clock_freq_mhz = 64;
+    LOG_INF("E2E Analysis Results:");
+    LOG_INF("  For conn_rx:");
+    LOG_INF("    Total packets processed: %u", conn_rx_analysis.total_packets);
+    LOG_INF("    Avg latency: %llu cycles (%llu us)",
+            conn_rx_analysis.avg_latency, conn_rx_analysis.avg_latency / clock_freq_mhz);
+    LOG_INF("    Min latency: %u cycles (%u us)",
+            conn_rx_analysis.min_latency, conn_rx_analysis.min_latency / clock_freq_mhz);
+    LOG_INF("    Max latency: %u cycles (%u us)",
+             conn_rx_analysis.max_latency, conn_rx_analysis.max_latency / clock_freq_mhz);
+}
+
+
+static void srcc_e2e_analysis_loop(void *, void *, void *)
+{
+    /* Sleep and print measures. */
+    while (1) {
+        //k_msleep(10000);    // 10sec
+        //k_msleep(60000);    // 1min
+        k_msleep(300000);   // 5min
+        analyze_e2e_metrics();
+        reset_e2e_metrics();
+    }
+}
+
+#define SRCC_E2E_THREAD_STACK_SIZE 4096
+#define SRCC_E2E_THREAD_PRIORITY 5
+K_THREAD_DEFINE(e2e_analysis_id,
+				SRCC_E2E_THREAD_STACK_SIZE,
+				srcc_e2e_analysis_loop,
+				NULL,
+				NULL,
+				NULL,
+				SRCC_E2E_THREAD_PRIORITY,
+				0,
+				0);
+#endif /* CONFIG_SRCC_E2E_LATENCY */

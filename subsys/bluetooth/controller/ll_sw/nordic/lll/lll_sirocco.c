@@ -23,6 +23,9 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/sirocco.h>
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+#include <zephyr/bluetooth/srcc_time_analysis.h>
+#endif /* CONFIG_SRCC_E2E_LATENCY */
 
 
 LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
@@ -39,7 +42,11 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
     struct srcc_conn_item *item;
     struct pdu_data *pdu_data;
     uint32_t timestamp;
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    uint32_t e2e_cycles;
 
+    e2e_cycles = srcc_analysis_capture_cycles();
+#endif  /* CONFIG_SRCC_E2E_LATENCY */
     timestamp = srcc_timing_capture_ms();
 
     pdu_data = radio_pkt_get();
@@ -73,6 +80,10 @@ void lll_srcc_conn_rx(struct lll_conn *lll, uint8_t crc_ok, uint32_t rssi_value)
 #else
     item->metric.payload = NULL;
 #endif
+
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    item->metric.e2e_start_cycles = e2e_cycles;
+#endif  /* CONFIG_SRCC_E2E_LATENCY */
 
     /* Callbacks */
     srcc_notify_conn_rx(item);

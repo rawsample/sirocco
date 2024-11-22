@@ -39,13 +39,13 @@ void init_srcc_analysis(void)
 }
 
 
-/* */
-
 static uint32_t capture_cycles(void)
 {
     return nrfx_timer_capture(&timer, NRF_TIMER_CC_CHANNEL3);
 }
 
+
+#if defined(CONFIG_SRCC_ISR_LATENCY)
 
 struct srcc_timestamp {
     uint32_t start;
@@ -178,4 +178,145 @@ void stop_timestamp_adv_tx_isr(void)
         adv_tx_ts_index = 0;
     }
 }
+#endif /* CONFIG_SRCC_ISR_LATENCY */
 
+/* To measure FIFO latency and throughput */
+#if defined(CONFIG_SRCC_FIFO_LATENCY)
+
+struct fifo_metrics {
+    uint32_t enqueue_time;
+    uint32_t dequeue_time;
+    uint32_t queue_length;
+};
+
+struct fifo_analysis {
+    uint32_t min_latency;
+    uint32_t max_latency;
+    uint64_t avg_latency;
+    uint32_t max_queue_length;
+    uint32_t total_messages;
+    uint32_t dropped_messages;
+};
+
+#define MAX_METRICS 6000
+static struct fifo_metrics fifo_metrics[MAX_METRICS];
+static atomic_t fifo_metrics_count = 0;
+static atomic_t current_queue_length = 0;
+static atomic_t dropped_messages = 0;
+
+
+void record_enqueue_metric(void)
+{
+    int index = atomic_inc(&fifo_metrics_count);
+
+    if (index < MAX_METRICS) {
+        fifo_metrics[index].enqueue_time = capture_cycles();
+        fifo_metrics[index].queue_length = atomic_inc(&current_queue_length);
+    } else {
+        atomic_inc(&dropped_messages);
+    }
+}
+
+void record_dequeue_metric(void)
+{
+    int index = atomic_get(&fifo_metrics_count) - 1;
+
+    if (index >= 0 && index < MAX_METRICS) {
+        fifo_metrics[index].dequeue_time = capture_cycles();
+        atomic_dec(&current_queue_length);
+    }
+}
+
+void reset_fifo_metrics(void) {
+    atomic_set(&fifo_metrics_count, 0);
+    atomic_set(&current_queue_length, 0);
+    atomic_set(&dropped_messages, 0);
+}
+
+
+static uint32_t calculate_elapsed_time(uint32_t start, uint32_t end) {
+    if (end >= start) {
+        return end - start;
+    } else {
+        // timer has overflowed
+        return end + (0xffffffffUL - start) + 1;
+    }
+}
+
+void analyze_fifo_metrics(void)
+{
+    struct fifo_analysis analysis = {
+        .min_latency = 0xffffffffUL,
+        .max_latency = 0,
+        .avg_latency = 0,
+        .max_queue_length = 0,
+        .total_messages = 0,
+        .dropped_messages = atomic_get(&dropped_messages)
+    };
+
+    uint64_t total_latency = 0;
+    int count = atomic_get(&fifo_metrics_count);
+    count = (count < MAX_METRICS) ? count : MAX_METRICS;
+
+    for (int i = 0; i < count; i++) {
+        uint32_t latency = calculate_elapsed_time(
+            fifo_metrics[i].enqueue_time,
+            fifo_metrics[i].dequeue_time
+        );
+
+        // Update min/max latency
+        analysis.min_latency = (latency < analysis.min_latency) ? latency : analysis.min_latency;
+        analysis.max_latency = (latency > analysis.max_latency) ? latency : analysis.max_latency;
+        total_latency += latency;
+
+        // Update max queue length
+        analysis.max_queue_length = MAX(
+            analysis.max_queue_length,
+            fifo_metrics[i].queue_length
+        );
+    }
+
+    // Calculate average latency
+    if (count > 0) {
+        analysis.avg_latency = total_latency / count;
+    }
+    analysis.total_messages = count;
+
+    // Print analysis results
+    const uint32_t clock_freq_mhz = 64;
+    LOG_INF("FIFO Analysis Results:");
+    LOG_INF("  Total messages processed: %u", analysis.total_messages);
+    LOG_INF("  Dropped messages: %u", analysis.dropped_messages);
+    LOG_INF("  Max queue length: %u", analysis.max_queue_length);
+    LOG_INF("  Avg latency: %llu cycles (%llu us)",
+            analysis.avg_latency, analysis.avg_latency / clock_freq_mhz);
+    LOG_INF("  Min latency: %u cycles (%u us)",
+            analysis.min_latency, analysis.min_latency / clock_freq_mhz);
+    LOG_INF("  Max latency: %u cycles (%u us)",
+             analysis.max_latency, analysis.max_latency / clock_freq_mhz);
+}
+
+static void srcc_fifo_analysis_loop(void *, void *, void *)
+{
+    /* Sleep and print measures. */
+    while (1) {
+        //k_msleep(10000);    // 10sec
+        //k_msleep(60000);    // 1min
+        k_msleep(300000);   // 5min
+        analyze_fifo_metrics();
+        reset_fifo_metrics();
+    }
+}
+
+#define SRCC_ANALYSIS_THREAD_STACK_SIZE 4096
+#define SRCC_ANALYSIS_THREAD_PRIORITY 5
+K_THREAD_DEFINE(fifo_analysis_id,
+				SRCC_ANALYSIS_THREAD_STACK_SIZE,
+				srcc_fifo_analysis_loop,
+				NULL,
+				NULL,
+				NULL,
+				SRCC_ANALYSIS_THREAD_PRIORITY,
+				0,
+				0);
+#endif /* CONFIG_SRCC_FIFO_LATENCY */

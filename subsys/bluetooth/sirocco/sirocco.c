@@ -6,6 +6,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 
 #include <zephyr/bluetooth/sirocco.h>
+#include <zephyr/bluetooth/srcc_time_analysis.h>
 
 
 
@@ -66,6 +67,9 @@ static void sirocco_main_loop(void *, void *, void *)
 
         if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
             conn_item = k_fifo_get(&conn_rx_fifo, K_FOREVER);
+#if defined(CONFIG_SRCC_FIFO_LATENCY)
+            record_dequeue_metric();
+#endif /* CONFIG_SRCC_FIFO_LATENCY */
             run_conn_rx_detection(&conn_item->metric);
 #if defined(CONFIG_BT_SRCC_KNOB)
             if (conn_item->metric.payload != NULL) {
@@ -131,6 +135,9 @@ void srcc_cb_register(struct srcc_cb *cb)
 
 void srcc_notify_conn_rx(struct srcc_conn_item *item)
 {
+#if defined(CONFIG_SRCC_FIFO_LATENCY)
+    record_enqueue_metric();
+#endif /* CONFIG_SRCC_FIFO_LATENCY */
     k_fifo_put(&conn_rx_fifo, item);
 
     /* Callbacks

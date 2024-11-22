@@ -19,3 +19,7 @@ void stop_timestamp_conn_tx_isr(void);
 void stop_timestamp_scan_rx_isr(void);
 void stop_timestamp_adv_rx_isr(void);
 void stop_timestamp_adv_tx_isr(void);
+
+/* Measure the FIFOs latency and throughput */
+void record_dequeue_metric(void);
+void record_enqueue_metric(void);

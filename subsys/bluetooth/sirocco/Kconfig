@@ -23,4 +23,10 @@ if BT_SIROCCO
 
 rsource "detection/Kconfig"
 
+config SRCC_FIFO_LATENCY
+    bool "Sirocco FIFO latency analysis"
+	depends on SRCC_ANALYSIS && BT_SIROCCO
+	help
+	  This option enables the latency analysis for FIFO between BLE ISRs and Sirocco main thread.
+
 endif # BT_SIROCCO

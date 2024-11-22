@@ -27,6 +27,7 @@
 
 LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
+void log_pdu_adv_type(char *isr, uint8_t type);
 
 
 /* 
@@ -121,6 +122,7 @@ void lll_srcc_scan_rx(struct lll_scan *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
+    //log_pdu_adv_type("scan_rx\0", pdu_adv->type);
 
     /* Select only SCAN packets */
     switch (pdu_adv->type) {
@@ -190,6 +192,7 @@ void lll_srcc_adv_rx(struct lll_adv *lll, uint8_t crc_ok, uint32_t rssi_value)
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
+    //log_pdu_adv_type("adv_rx\0", pdu_adv->type);
 
     //LOG_DBG("ADV RX: 0x%x", pdu_adv->type);
 
@@ -243,6 +246,7 @@ void lll_srcc_adv_tx(struct lll_adv *lll)
 
     /* Check if it is one of the type we monitor */
     pdu_adv = radio_pkt_get();
+    //log_pdu_adv_type("adv_tx\0", pdu_adv->type);
 
     /* Note: We do not consider secondary advertising physical channel here. */
     switch (pdu_adv->type) {
@@ -284,4 +288,48 @@ void lll_srcc_adv_tx(struct lll_adv *lll)
 
     /* Callbacks */
     srcc_notify_adv_tx(item);
+}
+
+
+
+
+
+void log_pdu_adv_type(char *isr, uint8_t type)
+{
+    char name[16];
+
+    switch (type) {
+        case 0b0000:    /* ADV_IND */
+            memcpy(name, "ADV_IND\0", 8);
+            break;
+        case 0b0001:    /* ADV_DIRECT_IND */
+            memcpy(name, "ADV_DIRECT_IND\0", 14);
+            break;
+        case 0b0010:    /* ADV_NONCONN_IND */
+            memcpy(name, "ADV_NONCONN_IND\0", 16);
+            break;
+        case 0b0011:    /* SCAN_REQ & AUX_SCAN_REQ */
+            memcpy(name, "SCAN_REQ\0", 9);
+            break;
+        case 0b0100:    /* SCAN_RSP */
+            memcpy(name, "SCAN_RSP\0", 9);
+            break;
+        case 0b0101:    /* CONNECT_IND & AUX_CONNECT_IND */
+            memcpy(name, "CONNECT_IND\0", 12);
+            break;
+        case 0b0110:    /* ADV_SCAN_IND */
+            memcpy(name, "ADV_SCAN_IND\0", 13);
+            break;
+        case 0b0111:    /* ADV_EXT_IND & ... */
+            memcpy(name, "ADV_EXT_IND\0", 12);
+            break;
+        case 0b1000:    /* AUX_CONNECT_RSP */
+            memcpy(name, "AUX_CONNECT_RSP\0", 16);
+            break;
+        default:
+            memcpy(name, "N/A\0", 4);
+            break;
+    }
+
+    LOG_INF("%s: %s", isr, name);
 }

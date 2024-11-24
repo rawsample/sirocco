@@ -201,6 +201,9 @@ struct __aligned(4) srcc_scan_metric {
     uint32_t timestamp;               /* in ms */
     uint16_t rssi;
     uint8_t channel:2;
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    uint32_t e2e_start_cycles;
+#endif /*CONFIG_SRCC_E2E_LATENCY */
 
     /* Packet */
     uint16_t crc_is_valid;
@@ -384,4 +387,36 @@ void srcc_detect_knob(struct srcc_conn_metric *conn_metric);
 void srcc_detect_btlejuice(struct srcc_scan_metric *scan_metric);
 #endif  /* CONFIG_BT_SRCC_BTLEJUICE */
 
-#endif
+
+#if defined(CONFIG_SRCC_ANALYSIS)
+void init_srcc_analysis(void);
+uint32_t srcc_analysis_capture_cycles(void);
+
+#if defined(CONFIG_SRCC_ISR_LATENCY)
+/* Measure the time spent within the ISR for packet reception and emission. */
+void start_timestamp_conn_rx_isr(void);
+void start_timestamp_conn_tx_isr(void);
+void start_timestamp_scan_rx_isr(void);
+void start_timestamp_adv_rx_isr(void);
+void start_timestamp_adv_tx_isr(void);
+void stop_timestamp_conn_rx_isr(void);
+void stop_timestamp_conn_tx_isr(void);
+void stop_timestamp_scan_rx_isr(void);
+void stop_timestamp_adv_rx_isr(void);
+void stop_timestamp_adv_tx_isr(void);
+#endif /* CONFIG_SRCC_ISR_LATENCY */
+
+#if defined(CONFIG_SRCC_FIFO_LATENCY)
+/* Measure the FIFOs latency and throughput */
+void record_dequeue_metric(void);
+void record_enqueue_metric(void);
+#endif /* CONFIG_SRCC_FIFO_LATENCY */
+
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+/* Measure the end to end latency */
+void srcc_e2e_conn_rx(uint32_t e2e_start_cycles);
+void srcc_e2e_scan_rx(uint32_t e2e_start_cycles);
+#endif /* CONFIG_SRCC_E2E_LATENCY */
+#endif /* CONFIG_SRRC_ANALYSIS */
+
+#endif  /* SRCC_H */

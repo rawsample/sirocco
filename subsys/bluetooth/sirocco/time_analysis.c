@@ -1,6 +1,7 @@
 /*
  */
-#include <zephyr/bluetooth/srcc_time_analysis.h>
+#include <zephyr/kernel.h>
+#include <zephyr/bluetooth/sirocco.h>
 #include <zephyr/sys_clock.h>
 #include <nrfx.h>
 #include <nrfx_timer.h>
@@ -337,9 +338,13 @@ struct e2e_analysis {
     uint32_t total_packets;
 };
 
-#define MAX_E2E_METRICS 6100
-static struct e2e_metrics e2e_conn_rx[MAX_E2E_METRICS];
+#define MAX_E2E_CONN_METRICS 6100
+static struct e2e_metrics e2e_conn_rx[MAX_E2E_CONN_METRICS];
 static atomic_t e2e_conn_rx_index = 0;
+
+#define MAX_E2E_SCAN_METRICS 1000
+static struct e2e_metrics e2e_scan_rx[MAX_E2E_SCAN_METRICS];
+static atomic_t e2e_scan_rx_index = 0;
 
 void srcc_e2e_conn_rx(uint32_t e2e_start_cycles)
 {
@@ -348,16 +353,33 @@ void srcc_e2e_conn_rx(uint32_t e2e_start_cycles)
     metrics.end = srcc_analysis_capture_cycles();
     metrics.start = e2e_start_cycles;
 
-    if (e2e_conn_rx_index < MAX_E2E_METRICS) {
+    if (e2e_conn_rx_index < MAX_E2E_CONN_METRICS) {
         e2e_conn_rx[e2e_conn_rx_index] = metrics;
         atomic_inc(&e2e_conn_rx_index);
     }
 }
 
+void srcc_e2e_scan_rx(uint32_t e2e_start_cycles)
+{
+    struct e2e_metrics metrics;
+
+    metrics.end = srcc_analysis_capture_cycles();
+    metrics.start = e2e_start_cycles;
+
+    if (e2e_scan_rx_index < MAX_E2E_SCAN_METRICS) {
+        e2e_scan_rx[e2e_scan_rx_index] = metrics;
+        atomic_inc(&e2e_scan_rx_index);
+    }
+}
+
+
+
 static void reset_e2e_metrics(void)
 {
-    memset(&e2e_conn_rx, 0, MAX_E2E_METRICS);
+    memset(&e2e_conn_rx, 0, MAX_E2E_CONN_METRICS);
     atomic_set(&e2e_conn_rx_index, 0);
+    memset(&e2e_scan_rx, 0, MAX_E2E_SCAN_METRICS);
+    atomic_set(&e2e_scan_rx_index, 0);
 }
 
 static void analyze_e2e_metrics(void)
@@ -368,11 +390,20 @@ static void analyze_e2e_metrics(void)
         .avg_latency = 0,
         .total_packets = 0,
     };
-    uint64_t total_latency = 0;
-    int count = atomic_get(&e2e_conn_rx_index);
-    count = (count < MAX_E2E_METRICS) ? count : MAX_E2E_METRICS;
+    struct e2e_analysis scan_rx_analysis = {
+        .min_latency = 0xffffffffUL,
+        .max_latency = 0,
+        .avg_latency = 0,
+        .total_packets = 0,
+    };
+    uint64_t total_latency_conn_rx = 0;
+    uint64_t total_latency_scan_rx = 0;
+    int count_conn_rx = atomic_get(&e2e_conn_rx_index);
+    int count_scan_rx = atomic_get(&e2e_scan_rx_index);
+    count_conn_rx = (count_conn_rx < MAX_E2E_CONN_METRICS) ? count_conn_rx : MAX_E2E_CONN_METRICS;
+    count_scan_rx = (count_scan_rx < MAX_E2E_SCAN_METRICS) ? count_scan_rx : MAX_E2E_SCAN_METRICS;
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count_conn_rx; i++) {
         uint32_t latency = calculate_elapsed_time(
             e2e_conn_rx[i].start,
             e2e_conn_rx[i].end
@@ -381,17 +412,35 @@ static void analyze_e2e_metrics(void)
         /* Update min/max latency */
         conn_rx_analysis.min_latency = (latency < conn_rx_analysis.min_latency) ? latency : conn_rx_analysis.min_latency;
         conn_rx_analysis.max_latency = (latency > conn_rx_analysis.max_latency) ? latency : conn_rx_analysis.max_latency;
-        total_latency += latency;
+        total_latency_conn_rx += latency;
+    }
+
+    for (int i = 0; i < count_scan_rx; i++) {
+        uint32_t latency = calculate_elapsed_time(
+            e2e_scan_rx[i].start,
+            e2e_scan_rx[i].end
+        );
+
+        /* Update min/max latency */
+        scan_rx_analysis.min_latency = (latency < scan_rx_analysis.min_latency) ? latency : scan_rx_analysis.min_latency;
+        scan_rx_analysis.max_latency = (latency > scan_rx_analysis.max_latency) ? latency : scan_rx_analysis.max_latency;
+        total_latency_scan_rx += latency;
     }
 
     /* Calculate average latency */
-    if (count > 0) {
-        conn_rx_analysis.avg_latency = total_latency / count;
-
+    if (count_conn_rx > 0) {
+        conn_rx_analysis.avg_latency = total_latency_conn_rx / count_conn_rx;
     } else {
         conn_rx_analysis.min_latency = 0;
     }
-    conn_rx_analysis.total_packets = count;
+    conn_rx_analysis.total_packets = count_conn_rx;
+
+    if (count_scan_rx > 0) {
+        scan_rx_analysis.avg_latency = total_latency_scan_rx / count_scan_rx;
+    } else {
+        scan_rx_analysis.min_latency = 0;
+    }
+    scan_rx_analysis.total_packets = count_scan_rx;
 
     /* Print analysis results */
     const uint32_t clock_freq_mhz = 64;
@@ -404,6 +453,15 @@ static void analyze_e2e_metrics(void)
             conn_rx_analysis.min_latency, conn_rx_analysis.min_latency / clock_freq_mhz);
     LOG_INF("    Max latency: %u cycles (%u us)",
              conn_rx_analysis.max_latency, conn_rx_analysis.max_latency / clock_freq_mhz);
+
+    LOG_INF("  For scan_rx:");
+    LOG_INF("    Total packets processed: %u", scan_rx_analysis.total_packets);
+    LOG_INF("    Avg latency: %llu cycles (%llu us)",
+            scan_rx_analysis.avg_latency, scan_rx_analysis.avg_latency / clock_freq_mhz);
+    LOG_INF("    Min latency: %u cycles (%u us)",
+            scan_rx_analysis.min_latency, scan_rx_analysis.min_latency / clock_freq_mhz);
+    LOG_INF("    Max latency: %u cycles (%u us)",
+             scan_rx_analysis.max_latency, scan_rx_analysis.max_latency / clock_freq_mhz);
 }
 
 

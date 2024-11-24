@@ -6,7 +6,6 @@
 #include <zephyr/bluetooth/bluetooth.h>
 
 #include <zephyr/bluetooth/sirocco.h>
-#include <zephyr/bluetooth/srcc_time_analysis.h>
 
 
 

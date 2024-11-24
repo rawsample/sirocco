@@ -49,9 +49,6 @@
 #include "lll_df_internal.h"
 
 #include "lll_sirocco.h"
-#if defined(CONFIG_SRCC_ISR_LATENCY)
-#include <zephyr/bluetooth/srcc_time_analysis.h>
-#endif
 
 #include "hal/debug.h"
 

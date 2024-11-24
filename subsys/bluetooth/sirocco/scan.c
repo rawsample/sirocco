@@ -357,4 +357,8 @@ void run_scan_rx_detection(struct srcc_scan_metric *scan_metric)
     scan_data->previous_timestamp = scan_metric->timestamp;
     remove_timeout_entries();
     //printk("Hashmap size: %u\n", sys_hashmap_size(&scan_hmap));
+
+#if defined(CONFIG_SRCC_E2E_LATENCY)
+    srcc_e2e_scan_rx(scan_metric->e2e_start_cycles);
+#endif /* CONFIG_SRCC_E2E_LATENCY */
 }

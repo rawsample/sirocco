@@ -1,6 +1,8 @@
 /*
  */
 #include <zephyr/kernel.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/sirocco.h>
 
@@ -19,11 +21,12 @@ K_MSGQ_DEFINE(alert_msgq, sizeof(struct alert_t), 32, 1);
 #define SRCC_ALERT_THREAD_PRIORITY 5
 
 static void log_alert(struct alert_t *alert);
+static void broadcast_alert(struct alert_t *alert);
 
 
 /* Callback mechanism
  ****************************************************************************/
-static struct alert_cb *callback_list;
+static struct srcc_alert_cb *callback_list;
 
 void srcc_alert_register_cb(struct srcc_alert_cb *cb)
 {
@@ -41,7 +44,8 @@ static void sirocco_alert_loop(void *, void *, void *)
     while (1) {
         ret = k_msgq_get(&alert_msgq, &alert, K_FOREVER);
         if (ret == 0) {
-            /* Alerts can be logged, send by HCI, etc. */
+            /* Alerts can be logged, sent to the controller app via the callback mechanism,
+               broadcasted as an advertisement, sent by HCI, etc. */
             log_alert(&alert);
 
             for (struct srcc_alert_cb *cb = callback_list; cb; cb = cb->_next) {
@@ -49,6 +53,8 @@ static void sirocco_alert_loop(void *, void *, void *)
                     cb->alert_cb(&alert);
                 }
             }
+
+            broadcast_alert(&alert);
 
         } else if (ret == -ENOMSG) {
             // do nothing
@@ -114,6 +120,64 @@ static void log_alert(struct alert_t *alert)
     }
 
     LOG_INF("[ALERT] %s", buffer);
+}
+
+#define ADV_SIROCCO_ID 0xABC
+
+/* Broadcast the alert for 5sec. */
+static void broadcast_alert(struct alert_t *alert)
+{
+    int ret;
+    size_t ad_data_size = 12;
+    uint8_t ad_data[14] = {
+        BT_LE_AD_NO_BREDR,
+        (ADV_SIROCCO_ID & 0xFF),
+        ((ADV_SIROCCO_ID >> 8) & 0xFF),
+        alert->nb,
+        (alert->timestamp & 0xFF),
+        ((alert->timestamp >> 8) & 0xFF),
+        ((alert->timestamp >> 16) & 0xFF),
+        ((alert->timestamp >> 24) & 0xFF)
+    };
+
+    switch (alert->nb) {
+        /* access address */
+        case BTLEJACK:
+        case INJECTABLE:
+        case KNOB:
+            memcpy(&ad_data[8], alert->access_addr, 4);
+            ad_data_size = 12;
+            break;
+
+        /* advertisement address */
+        case NO_ALERT:
+        case BTLEJUICE:
+        case GATTACKER:
+            memcpy(&ad_data[8], alert->adv_addr, BDADDR_SIZE);
+            ad_data_size = 14;
+            break;
+
+        default:
+            return;
+    }
+
+    struct bt_data ad[] = {
+        BT_DATA(BT_DATA_FLAGS, &ad_data[0], 1),
+        BT_DATA(BT_DATA_MANUFACTURER_DATA, ad_data + 1, ad_data_size - 1)
+    };
+
+    ret = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
+    if (ret) {
+        printk("Advertising failed to start (err %d)\n", ret);
+        return;
+    }
+
+    k_msleep(5000);
+
+    ret = bt_le_adv_stop();
+    if (ret) {
+        printk("Advertising failed to stop (err %d)\n", ret);
+    }
 }
 
 

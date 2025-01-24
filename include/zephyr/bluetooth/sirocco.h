@@ -385,8 +385,8 @@ struct srcc_alert_cb {
   void (*alert_cb)(struct alert_t *);
   struct srcc_alert_cb *_next;
 };
-void srcc_alert_register_cb(struct srcc_alert_cb *cb);
 
+void srcc_alert_register_cb(struct srcc_alert_cb *cb);
 void srcc_alert(enum alert_num nb, uint32_t timestamp, uint8_t addr[]);
 
 #if defined(CONFIG_BT_SRCC_BTLEJACK)

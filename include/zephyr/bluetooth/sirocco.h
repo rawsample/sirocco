@@ -372,6 +372,21 @@ enum alert_num {
   KNOB        = 0x6,
 };
 
+struct alert_t {
+    enum alert_num nb;
+    uint32_t timestamp; /* in ms */
+    union {
+        uint8_t adv_addr[BDADDR_SIZE];
+        uint8_t access_addr[4];
+    };
+};
+
+struct srcc_alert_cb {
+  void (*alert_cb)(struct alert_t *);
+  struct srcc_alert_cb *_next;
+};
+void srcc_alert_register_cb(struct srcc_alert_cb *cb);
+
 void srcc_alert(enum alert_num nb, uint32_t timestamp, uint8_t addr[]);
 
 #if defined(CONFIG_BT_SRCC_BTLEJACK)

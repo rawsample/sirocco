@@ -8,15 +8,6 @@
 LOG_MODULE_DECLARE(sirocco, CONFIG_BT_SRCC_LOG_LEVEL);
 
 
-struct alert_t {
-    enum alert_num nb;
-    uint32_t timestamp; /* in ms */
-    union {
-        uint8_t adv_addr[BDADDR_SIZE];
-        uint8_t access_addr[4];
-    };
-};
-
 
 K_MSGQ_DEFINE(alert_msgq, sizeof(struct alert_t), 32, 1);
 
@@ -30,6 +21,17 @@ K_MSGQ_DEFINE(alert_msgq, sizeof(struct alert_t), 32, 1);
 static void log_alert(struct alert_t *alert);
 
 
+/* Callback mechanism
+ ****************************************************************************/
+static struct alert_cb *callback_list;
+
+void srcc_alert_register_cb(struct srcc_alert_cb *cb)
+{
+	cb->_next = callback_list;
+	callback_list = cb;
+}
+
+
 /* Main loop */
 static void sirocco_alert_loop(void *, void *, void *)
 {
@@ -39,8 +41,14 @@ static void sirocco_alert_loop(void *, void *, void *)
     while (1) {
         ret = k_msgq_get(&alert_msgq, &alert, K_FOREVER);
         if (ret == 0) {
-            /* For now log the message, later send it via HCI */
+            /* Alerts can be logged, send by HCI, etc. */
             log_alert(&alert);
+
+            for (struct srcc_alert_cb *cb = callback_list; cb; cb = cb->_next) {
+                if(cb->alert_cb) {
+                    cb->alert_cb(&alert);
+                }
+            }
 
         } else if (ret == -ENOMSG) {
             // do nothing
